@@ -2,7 +2,7 @@
 FROM python:3.11-slim
 
 # Install system dependencies including FFmpeg, libmagic, and build tools for Pillow/HEIF
-# --no-install-recommends keeps the image small
+# hadolint ignore=DL3008,DL3015
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libmagic1 \
@@ -35,5 +35,4 @@ USER appuser
 EXPOSE 5000
 
 # Start the application using a production WSGI server (Gunicorn)
-# We use 1 worker and a longer timeout because yt-dlp downloads can take time
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "600", "app:app"]

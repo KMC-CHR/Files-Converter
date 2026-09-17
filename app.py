@@ -193,3 +193,8 @@ if __name__ == '__main__':
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
     
     app.run(host='127.0.0.1', port=5000, debug=False)
+
+@app.route('/healthz')
+def healthz():
+    # A lightweight endpoint for keep-alive pings
+    return 'ok', 200

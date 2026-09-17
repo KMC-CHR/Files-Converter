@@ -180,8 +180,9 @@ def convert_yt():
             return jsonify({"error": "Video exceeds the 15-minute limit."}), 400
         return jsonify({"error": "Failed to download video. It may be private or region-locked."}), 400
     except Exception as e:
+        # Print the REAL error to Render logs so we can diagnose it
         print(f"YT-DLP CRITICAL ERROR: {str(e)}")
-        return jsonify({"error": "Internal server error during YouTube processing."}), 500
+        return jsonify({"error": f"Server Error: {str(e)}"}), 500
 
 if __name__ == '__main__':
     # Check for FFmpeg on startup

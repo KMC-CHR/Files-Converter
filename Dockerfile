@@ -1,7 +1,8 @@
 # Use a lightweight, minimal Python base image
 FROM python:3.11-slim
 
-# Install system dependencies including libmagic, ffmpeg, and build toolchain for image codecs
+# Install system dependencies including FFmpeg, libmagic, and build tools for Pillow/HEIF
+# hadolint ignore=DL3008,DL3015
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libmagic1 \
@@ -9,7 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libheif-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Create an unprivileged user and group
+# Create an unprivileged user and group for security
 RUN groupadd -r appuser && useradd -r -g appuser -s /bin/false appuser
 
 # Set the working directory
@@ -33,9 +34,5 @@ USER appuser
 # Expose the application port
 EXPOSE 5000
 
-# Start the application using a production WSGI server
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "300", "app:app"]
-
-
-RUN apt-get update && apt-get install -y ffmpeg nodejs npm
-RUN npm install -g yt-dlp
+# Start the application using a production WSGI server (Gunicorn)
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "--timeout", "600", "app:app"]

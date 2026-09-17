@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniShift | Universal Media & Document Hub</title>
+
+    <!-- Satoshi & Inter Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</head>
+
+<body>
+    <div class="workspace-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="brand">
+                <a href="/" class="brand-link">
+                    <div class="brand-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                        </svg>
+                    </div>
+                    <span class="brand-name">OmniShift</span>
+                </a>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#yt-section" class="nav-link">YouTube Extractor</a>
+                <a href="#converter-card" class="nav-link">File Converter</a>
+                <a href="#how-it-works" class="nav-link">How it Works</a>
+                <a href="#faq-section" class="nav-link">FAQ</a>
+            </nav>
+        </header>
+
+        <!-- Hero Section -->
+        <section class="hero-section">
+            <h1 class="hero-title">Universal File & Link Converter</h1>
+            <p class="hero-subtitle">Transform media, documents, and stream links instantly. No files are stored on our
+                servers.</p>
+        </section>
+
+        <!-- YouTube Extractor Card -->
+        <section class="yt-downloader-card" id="yt-section">
+            <div class="yt-card-header">
+                <div class="yt-badge">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    </svg>
+                    <span>YouTube Extractor</span>
+                </div>
+                <h2>Paste a link to extract audio or video</h2>
+            </div>
+
+            <form class="yt-form-container" id="yt-form">
+                <!-- Row 1: Input with Paste Button -->
+                <div class="yt-input-wrapper">
+                    <input type="url" id="yt-url-input" class="yt-input"
+                        placeholder="https://www.youtube.com/watch?v=..." required>
+                    <button type="button" class="btn-paste-icon" id="paste-btn" title="Paste from clipboard">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Row 2: Format Toggle & Submit -->
+                <div class="yt-controls-row">
+                    <div class="format-toggle">
+                        <input type="radio" name="yt-format" id="format-mp3" value="mp3" checked>
+                        <label for="format-mp3">Audio (MP3)</label>
+                        <input type="radio" name="yt-format" id="format-mp4" value="mp4">
+                        <label for="format-mp4">Video (MP4)</label>
+                    </div>
+                    <button type="submit" class="btn-primary btn-yt" id="yt-submit-btn">
+                        <span>Fetch & Convert</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Main Converter Card -->
+        <main class="converter-card" id="converter-card">
+            <input type="file" id="file-input-hidden" multiple style="display: none;">
+
+            <!-- Drag & Drop / Empty State -->
+            <div class="drag-canvas-container" id="drag-canvas">
+                <div class="empty-state" id="empty-state">
+                    <div class="upload-icon-wrapper">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                    </div>
+                    <h2>Choose Files or drag & drop here</h2>
+                    <p class="upload-hint">Supports Images (PNG, JPG, WEBP, HEIC, HEIF) and PDFs</p>
+                    <button type="button" class="btn-primary-lg" id="select-files-btn">
+                        <span>Choose Files</span>
+                    </button>
+                </div>
+
+                <!-- Active State (File List) -->
+                <div class="active-state" id="active-state" style="display: none;">
+                    <div class="card-toolbar">
+                        <div class="queue-stats">
+                            <span id="queue-count">0 File(s)</span>
+                            <span class="dot-separator"></span>
+                            <span id="queue-size">0.00 MB</span>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button type="button" class="btn-icon-action" id="select-folder-btn" title="Save Directory">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path
+                                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-icon-action" id="add-more-btn" title="Add Files">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-icon-action danger" id="clear-all-btn" title="Clear Queue">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path
+                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="file-list-wrapper" id="file-list-container"></div>
+
+                    <div class="batch-action-bar">
+                        <div class="global-target">
+                            <label for="global-format-select">Convert All To:</label>
+                            <select class="native-styled-select" id="global-format-select">
+                                <option value="webp">WEBP</option>
+                                <option value="png">PNG</option>
+                                <option value="jpg">JPEG</option>
+                                <option value="pdf">PDF</option>
+                            </select>
+                            <span class="folder-indicator" id="folder-indicator">Save: Default Downloads</span>
+                        </div>
+
+                        <button type="button" class="btn-primary" id="convert-all-btn">
+                            <span>Convert All</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="error-banner" id="error-banner"></div>
+        </main>
+
+        <!-- Core Capabilities -->
+        <section class="tools-directory" id="tools-directory">
+            <h2 class="section-title">Core Capabilities</h2>
+            <div class="feature-strip">
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Image & Document Conversion</h3>
+                        <p>Convert HEIC, HEIF, PNG, JPG, and WEBP files to PDF, PNG, JPG, or WEBP formats instantly.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 18V5l12-2v13"></path>
+                            <circle cx="6" cy="18" r="3"></circle>
+                            <circle cx="18" cy="16" r="3"></circle>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <h3>YouTube Audio Extraction</h3>
+                        <p>Paste a YouTube link to extract high-quality MP3 audio or download the video as MP4.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Batch Processing</h3>
+                        <p>Upload up to 100 files at once. The system will process them sequentially and package them
+                            into a ZIP file.</p>
+                    </div>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                    </div>
+                    <div class="feature-text">
+                        <h3>Privacy First</h3>
+                        <p>Files are processed in temporary operational memory and are immediately cleared once sent
+                            back to your browser.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it Works -->
+        <section class="how-it-works-section" id="how-it-works">
+            <h2 class="section-title">How to Convert Files</h2>
+            <div class="steps-grid">
+                <div class="step-card">
+                    <span class="step-number">1</span>
+                    <h3>Select Files</h3>
+                    <p>Click the Choose Files button or drag images into the drop area.</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">2</span>
+                    <h3>Set Format</h3>
+                    <p>Select target output formats individually or across the batch.</p>
+                </div>
+                <div class="step-card">
+                    <span class="step-number">3</span>
+                    <h3>Download</h3>
+                    <p>Click Convert All to process and save files to your computer.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section" id="faq-section">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-container">
+                <details class="faq-item">
+                    <summary>Are my files safe?</summary>
+                    <p>Yes. Files exist in temporary operational memory during processing and are immediately cleared
+                        once sent back to your browser. No files are logged or saved to server storage.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>Can I convert multiple images at once?</summary>
+                    <p>Yes. You can add up to 100 images to the processing queue. Converts run sequentially and download
+                        automatically as single files or a ZIP package if you have 3 or more files.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>Why does the YouTube download take a while?</summary>
+                    <p>Our server must fetch the video, extract the audio using FFmpeg, and then send it back to you.
+                        This process takes a few seconds depending on the video length and server load.</p>
+                </details>
+            </div>
+        </section>
+
+        <footer class="app-footer">
+            <p>OmniShift | Universal Media & File Processing Engine</p>
+        </footer>
+    </div>
+
+    <script>
+        const fileInputHidden = document.getElementById('file-input-hidden');
+        const dragCanvas = document.getElementById('drag-canvas');
+        const emptyState = document.getElementById('empty-state');
+        const activeState = document.getElementById('active-state');
+        const selectFilesBtn = document.getElementById('select-files-btn');
+        const addMoreBtn = document.getElementById('add-more-btn');
+        const selectFolderBtn = document.getElementById('select-folder-btn');
+        const folderIndicator = document.getElementById('folder-indicator');
+        const fileListContainer = document.getElementById('file-list-container');
+        const queueCount = document.getElementById('queue-count');
+        const queueSize = document.getElementById('queue-size');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const convertAllBtn = document.getElementById('convert-all-btn');
+        const globalFormatSelect = document.getElementById('global-format-select');
+        const errorBanner = document.getElementById('error-banner');
+
+        const ytForm = document.getElementById('yt-form');
+        const ytUrlInput = document.getElementById('yt-url-input');
+        const ytSubmitBtn = document.getElementById('yt-submit-btn');
+        const pasteBtn = document.getElementById('paste-btn');
+
+        const allowedImages = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'pdf'];
+        const MAX_FILES = 100;
+
+        let fileStore = [];
+        let savedDirectoryHandle = null;
+
+        // --- YouTube Paste Button ---
+        pasteBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                ytUrlInput.value = text;
+            } catch (err) {
+                alert('Please allow clipboard access or paste manually.');
+            }
+        });
+
+        // --- YouTube Form Submission ---
+        ytForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const url = ytUrlInput.value.trim();
+            const format = document.querySelector('input[name="yt-format"]:checked').value;
+
+            if (!url) return;
+
+            ytSubmitBtn.disabled = true;
+            ytSubmitBtn.textContent = 'Processing...';
+
+            try {
+                const response = await fetch('/convert-yt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url: url, target_format: format })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error || 'Conversion failed');
+                }
+
+                const blob = await response.blob();
+                const downloadUrl = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = downloadUrl;
+                a.download = `media.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(downloadUrl);
+
+                ytUrlInput.value = '';
+            } catch (err) {
+                alert(err.message);
+            } finally {
+                ytSubmitBtn.disabled = false;
+                ytSubmitBtn.textContent = 'Fetch & Convert';
+            }
+        });
+
+        // --- Drag and Drop Logic ---
+        ['dragenter', 'dragover'].forEach(evt => {
+            window.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dragCanvas.classList.add('canvas-active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            window.addEventListener(evt, (e) => {
+                e.preventDefault();
+                dragCanvas.classList.remove('canvas-active');
+            });
+        });
+
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            if (e.dataTransfer.files.length) appendFiles(e.dataTransfer.files);
+        });
+
+        selectFilesBtn.addEventListener('click', () => fileInputHidden.click());
+        addMoreBtn.addEventListener('click', () => fileInputHidden.click());
+        fileInputHidden.addEventListener('change', () => {
+            if (fileInputHidden.files.length) appendFiles(fileInputHidden.files);
+        });
+
+        // --- Folder Selection ---
+        selectFolderBtn.addEventListener('click', async () => {
+            if ('showDirectoryPicker' in window) {
+                try {
+                    savedDirectoryHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                    folderIndicator.textContent = `Save: ${savedDirectoryHandle.name}`;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        errorBanner.textContent = 'Could not set custom folder directory.';
+                        errorBanner.style.display = 'block';
+                    }
+                }
+            } else {
+                errorBanner.textContent = 'Directory picking is not supported on this browser. Standard downloads will be used.';
+                errorBanner.style.display = 'block';
+            }
+        });
+
+        // --- File Processing Logic ---
+        function appendFiles(newFiles) {
+            errorBanner.style.display = 'none';
+            const incoming = Array.from(newFiles);
+
+            if (fileStore.length + incoming.length > MAX_FILES) {
+                errorBanner.textContent = `You can only add up to ${MAX_FILES} files at a time.`;
+                errorBanner.style.display = 'block';
+                return;
+            }
+
+            incoming.forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (allowedImages.includes(ext)) {
+                    fileStore.push({
+                        id: Math.random().toString(36).substring(2, 9),
+                        fileObject: file,
+                        targetFormat: 'webp',
+                        status: 'Ready',
+                        progress: 0,
+                        convertedBlob: null
+                    });
+                }
+            });
+
+            renderList();
+        }
+
+        function removeFile(id) {
+            fileStore = fileStore.filter(item => item.id !== id);
+            renderList();
+        }
+
+        async function saveConvertedFile(item) {
+            if (!item.convertedBlob) return;
+
+            if (savedDirectoryHandle) {
+                try {
+                    const fileHandle = await savedDirectoryHandle.getFileHandle(item.downloadName, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(item.convertedBlob);
+                    await writable.close();
+                    return;
+                } catch (e) {
+                    // Fallback
+                }
+            }
+
+            const url = window.URL.createObjectURL(item.convertedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.downloadName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        clearAllBtn.addEventListener('click', () => {
+            fileStore = [];
+            errorBanner.style.display = 'none';
+            renderList();
+        });
+
+        globalFormatSelect.addEventListener('change', (e) => {
+            const val = e.target.value;
+            fileStore.forEach(item => {
+                item.targetFormat = val;
+            });
+            renderList();
+        });
+
+        function renderList() {
+            fileListContainer.innerHTML = '';
+            if (!fileStore.length) {
+                emptyState.style.display = 'flex';
+                activeState.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            activeState.style.display = 'block';
+
+            let totalBytes = 0;
+
+            fileStore.forEach((item) => {
+                totalBytes += item.fileObject.size;
+
+                const card = document.createElement('div');
+                card.className = 'file-item-card';
+
+                const formatOptions = [
+                    { val: 'webp', text: 'WEBP' },
+                    { val: 'png', text: 'PNG' },
+                    { val: 'jpg', text: 'JPEG' },
+                    { val: 'pdf', text: 'PDF' }
+                ];
+
+                const iconSvg = `<svg class="item-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+
+                const optionsHtml = formatOptions.map(opt => `<option value="${opt.val}" ${opt.val === item.targetFormat ? 'selected' : ''}>${opt.text}</option>`).join('');
+
+                const downloadBtnHtml = item.convertedBlob ?
+                    `<button type="button" class="btn-icon-success" onclick="saveConvertedFile(fileStore.find(i => i.id === '${item.id}'))" title="Download File">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>` : '';
+
+                const statusContent = item.status === 'Converting...' ?
+                    `<div class="inline-row-progress">
+                        <div class="row-progress-bar"><div class="row-progress-fill" style="width: ${item.progress}%"></div></div>
+                        <span class="row-progress-text">${item.progress}%</span>
+                    </div>` :
+                    `<span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>`;
+
+                card.innerHTML = `
+                    <div class="item-left">
+                        ${iconSvg}
+                        <div class="item-details">
+                            <span class="item-name" title="${item.fileObject.name}">${item.fileObject.name}</span>
+                            <span class="item-sizes">${(item.fileObject.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        </div>
+                    </div>
+                    <div class="item-right">
+                        ${statusContent}
+                        <select class="native-styled-select item-select" data-id="${item.id}">
+                            ${optionsHtml}
+                        </select>
+                        ${downloadBtnHtml}
+                        <button type="button" class="btn-icon-danger" onclick="removeFile('${item.id}')" title="Remove">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                `;
+                fileListContainer.appendChild(card);
+            });
+
+            document.querySelectorAll('.item-select').forEach(selectEl => {
+                selectEl.addEventListener('change', (e) => {
+                    const id = e.target.getAttribute('data-id');
+                    const newVal = e.target.value;
+                    const item = fileStore.find(i => i.id === id);
+                    if (item) {
+                        item.targetFormat = newVal;
+                        renderList();
+                    }
+                });
+            });
+
+            queueCount.textContent = `${fileStore.length} File(s)`;
+            queueSize.textContent = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+        }
+
+        async function processSequentialQueue() {
+            if (!fileStore.length) return;
+
+            errorBanner.style.display = 'none';
+            convertAllBtn.disabled = true;
+
+            const total = fileStore.length;
+
+            for (let i = 0; i < total; i++) {
+                const item = fileStore[i];
+                if (item.status === 'Done') continue;
+
+                item.status = 'Converting...';
+                item.progress = 0;
+                renderList();
+
+                const formData = new FormData();
+                formData.append('file', item.fileObject);
+                formData.append('target_format', item.targetFormat);
+
+                try {
+                    const blob = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/convert-single', true);
+                        xhr.responseType = 'blob';
+
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                item.progress = Math.round((e.loaded / e.total) * 100);
+                                renderList();
+                            }
+                        };
+
+                        xhr.onload = () => {
+                            if (xhr.status === 200) {
+                                resolve(xhr.response);
+                            } else {
+                                reject(new Error('Conversion failed'));
+                            }
+                        };
+
+                        xhr.onerror = () => reject(new Error('Network error'));
+                        xhr.send(formData);
+                    });
+
+                    item.status = 'Done';
+                    item.convertedBlob = blob;
+
+                    const baseName = item.fileObject.name.includes('.')
+                        ? item.fileObject.name.substring(0, item.fileObject.name.lastIndexOf('.'))
+                        : item.fileObject.name;
+                    item.downloadName = `${baseName}.${item.targetFormat}`;
+                } catch (err) {
+                    item.status = 'Failed';
+                }
+
+                renderList();
+            }
+
+            const successfulItems = fileStore.filter(i => i.status === 'Done' && i.convertedBlob);
+
+            if (successfulItems.length >= 3) {
+                const zip = new JSZip();
+                const folder = zip.folder("Converted_Files");
+
+                successfulItems.forEach(item => {
+                    folder.file(item.downloadName, item.convertedBlob);
+                });
+
+                const zipContent = await zip.generateAsync({ type: "blob" });
+
+                if (savedDirectoryHandle) {
+                    try {
+                        const fileHandle = await savedDirectoryHandle.getFileHandle("Converted_Files.zip", { create: true });
+                        const writable = await fileHandle.createWritable();
+                        await writable.write(zipContent);
+                        await writable.close();
+                    } catch (e) {
+                        const url = window.URL.createObjectURL(zipContent);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = "Converted_Files.zip";
+                        a.click();
+                        window.URL.revokeObjectURL(url);
+                    }
+                } else {
+                    const url = window.URL.createObjectURL(zipContent);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = "Converted_Files.zip";
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                }
+            } else {
+                for (let i = 0; i < successfulItems.length; i++) {
+                    await saveConvertedFile(successfulItems[i]);
+                }
+            }
+
+            convertAllBtn.disabled = false;
+        }
+
+        convertAllBtn.addEventListener('click', processSequentialQueue);
+    </script>
+</body>
+
+</html>

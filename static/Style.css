@@ -137,7 +137,7 @@ body {
     margin-right: auto;
 }
 
-/* --- YouTube Extractor Card --- */
+/* --- Upscaler & Extractor Card --- */
 .yt-downloader-card {
     background: var(--card-surface);
     border: 1px solid var(--card-border);
@@ -148,7 +148,7 @@ body {
 }
 
 .yt-card-header {
-    margin-bottom: 16px;
+    margin-bottom: 20px;
 }
 
 .yt-badge {
@@ -170,93 +170,63 @@ body {
     color: var(--text-primary);
 }
 
-.yt-form-container {
+/* --- Image Upscaler Specific --- */
+.upscale-container {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 20px;
 }
 
-.yt-input-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.yt-input {
-    width: 100%;
-    background: var(--bg-surface);
-    border: 1px solid var(--card-border);
-    padding: 12px 44px 12px 16px;
-    border-radius: 10px;
-    color: var(--text-primary);
-    outline: none;
-    font-family: var(--font-body);
-    font-size: 0.9rem;
-    transition: border-color 0.15s ease;
-}
-
-.yt-input:focus {
-    border-color: var(--accent-blue);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-}
-
-.btn-paste-icon {
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    padding: 6px;
+.upscale-upload {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    border-radius: 6px;
-    transition: all 0.2s ease;
-}
-
-.btn-paste-icon:hover {
-    color: var(--accent-blue);
-    background: rgba(37, 99, 235, 0.08);
-}
-
-.yt-controls-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-}
-
-/* Segmented Control */
-.format-toggle {
-    display: flex;
+    padding: 32px 20px;
     background: var(--bg-surface);
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 4px;
-    gap: 4px;
-}
-
-.format-toggle input[type="radio"] {
-    display: none;
-}
-
-.format-toggle label {
-    padding: 8px 20px;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
-    border-radius: 8px;
+    border: 2px dashed var(--card-border);
+    border-radius: 12px;
+    text-align: center;
     cursor: pointer;
-    transition: all 0.2s ease;
-    user-select: none;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.format-toggle input[type="radio"]:checked+label {
-    background: var(--card-surface);
-    color: var(--accent-blue);
-    box-shadow: var(--shadow-sm);
+.upscale-upload:hover {
+    border-color: var(--accent-blue);
+    background-color: rgba(37, 99, 235, 0.02);
+}
+
+.upscale-upload .upload-hint {
+    margin-top: 12px;
+    margin-bottom: 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.upscale-controls {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr) auto;
+    gap: 16px;
+    align-items: end;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.control-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.control-group .native-styled-select {
+    width: 100%;
+    padding: 10px 12px;
 }
 
 /* --- Main Converter Card --- */
@@ -610,6 +580,7 @@ body {
 .btn-yt {
     padding: 10px 28px;
     font-size: 0.9rem;
+    height: 42px;
 }
 
 .error-banner {
@@ -802,6 +773,10 @@ body {
     .feature-strip {
         grid-template-columns: repeat(2, 1fr);
     }
+
+    .upscale-controls {
+        grid-template-columns: repeat(2, 1fr);
+    }
 }
 
 @media (max-width: 768px) {
@@ -809,13 +784,8 @@ body {
         font-size: 1.75rem;
     }
 
-    .yt-controls-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .format-toggle {
-        justify-content: center;
+    .upscale-controls {
+        grid-template-columns: 1fr;
     }
 
     .btn-yt {
@@ -871,10 +841,6 @@ body {
 
     .item-name {
         max-width: 200px;
-    }
-
-    .yt-input {
-        font-size: 0.85rem;
     }
 
     .empty-state {

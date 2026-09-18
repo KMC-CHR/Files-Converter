@@ -1,16 +1,12 @@
 import io
 import os
-import re
 import filetype
-import yt_dlp
 from flask import Flask, request, send_file, jsonify, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image
 import pillow_heif
 from werkzeug.utils import secure_filename
-import tempfile
-import shutil
 
 # Register HEIF opener safely
 try:
@@ -19,8 +15,7 @@ except Exception as e:
     print(f"WARNING: Could not register HEIF opener: {e}")
 
 app = Flask(__name__)
-# Lowered to 15MB per file to prevent memory exhaustion on the server
-app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024 
+app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024  # 15MB per file
 
 limiter = Limiter(
     get_remote_address,
@@ -35,13 +30,16 @@ ALLOWED_MIME_TYPES = {
 }
 ALLOWED_TARGET_FORMATS = {'png', 'jpg', 'jpeg', 'webp', 'pdf'}
 
-# YouTube URL Regex to prevent SSRF
-YOUTUBE_REGEX = re.compile(
-    r'^(https?://)?(www\.)?(youtube\.com|youtu\.?be)/.+$'
-)
+# Resolution presets (width x height for landscape, will auto-detect orientation)
+RESOLUTION_PRESETS = {
+    '720p': 1280,
+    '1080p': 1920,
+    '1440p': 2560,
+    '2160p': 3840,
+    'source': None  # Keep original size
+}
 
 def validate_mime(file_bytes):
-    """Use filetype library for safe, cross-platform MIME detection."""
     kind = filetype.guess(file_bytes)
     if kind is None:
         return None
@@ -51,6 +49,10 @@ def validate_mime(file_bytes):
 def index():
     return render_template('Index.html')
 
+@app.route('/healthz')
+def healthz():
+    return 'ok', 200
+
 @app.route('/convert-single', methods=['POST'])
 @limiter.limit("10 per minute")
 def convert_single():
@@ -58,7 +60,7 @@ def convert_single():
     target_format = request.form.get('target_format', '').lower().strip()
 
     if not file or not target_format:
-        return jsonify({"error": "Missing file or target format payload."}), 400
+        return jsonify({"error": "Missing file or target format."}), 400
 
     if target_format not in ALLOWED_TARGET_FORMATS:
         return jsonify({"error": "Unsupported target format."}), 400
@@ -69,7 +71,7 @@ def convert_single():
 
     mime_type = validate_mime(file_bytes)
     if mime_type not in ALLOWED_MIME_TYPES:
-        return jsonify({"error": f"Unsupported or invalid file type. Detected: {mime_type}"}), 400
+        return jsonify({"error": f"Unsupported file type. Detected: {mime_type}"}), 400
 
     raw_filename = file.filename or "converted"
     clean_name = secure_filename(raw_filename)
@@ -107,95 +109,104 @@ def convert_single():
         print(f"CONVERSION ERROR: {str(e)}")
         return jsonify({"error": "Internal conversion error. The file may be corrupted."}), 500
 
-@app.route('/convert-yt', methods=['POST'])
-@limiter.limit("5 per minute")
-def convert_yt():
-    data = request.get_json() or {}
-    url = data.get('url', '').strip()
-    target_format = data.get('target_format', 'mp3').lower().strip()
 
-    if not url:
-        return jsonify({"error": "Please provide a valid YouTube URL."}), 400
-    
-    if not YOUTUBE_REGEX.match(url):
-        return jsonify({"error": "Invalid URL. Only YouTube links are allowed."}), 400
+@app.route('/upscale-single', methods=['POST'])
+@limiter.limit("10 per minute")
+def upscale_single():
+    file = request.files.get('file')
+    target_res = request.form.get('target_res', '1080p').lower().strip()
+    target_format = request.form.get('target_format', 'png').lower().strip()
+    resample_filter = request.form.get('resample', 'lanczos').lower().strip()
 
-    if target_format not in ['mp3', 'mp4']:
-        return jsonify({"error": "Invalid format. Choose mp3 or mp4."}), 400
+    if not file:
+        return jsonify({"error": "Missing file."}), 400
 
-    temp_dir = tempfile.gettempdir()
-    
-    ydl_opts = {
-        'format': 'bestaudio/best' if target_format == 'mp3' else 'bestvideo+bestaudio/best',
-        'outtmpl': os.path.join(temp_dir, '%(title)s.%(ext)s'),
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }] if target_format == 'mp3' else [],
-        'quiet': True,
-        'no_warnings': True,
-        'match_filter': yt_dlp.utils.match_filter_func("duration < 900"),
+    if target_res not in RESOLUTION_PRESETS:
+        return jsonify({"error": "Unsupported resolution preset."}), 400
+
+    if target_format not in ('png', 'jpg', 'jpeg', 'webp'):
+        return jsonify({"error": "Unsupported output format for upscaling."}), 400
+
+    file_bytes = file.read()
+    if len(file_bytes) == 0:
+        return jsonify({"error": "File is empty."}), 400
+
+    mime_type = validate_mime(file_bytes)
+    if mime_type not in ALLOWED_MIME_TYPES:
+        return jsonify({"error": f"Unsupported file type. Detected: {mime_type}"}), 400
+
+    # Map filter names to Pillow resampling methods
+    filter_map = {
+        'lanczos': Image.Resampling.LANCZOS,
+        'bicubic': Image.Resampling.BICUBIC,
+        'bilinear': Image.Resampling.BILINEAR,
+        'nearest': Image.Resampling.NEAREST,
     }
+    resample_method = filter_map.get(resample_filter, Image.Resampling.LANCZOS)
+
+    raw_filename = file.filename or "upscaled"
+    clean_name = secure_filename(raw_filename)
+    base_name = clean_name.rsplit('.', 1)[0] if '.' in clean_name else clean_name
+    if not base_name:
+        base_name = "upscaled"
+
+    output_filename = f"{base_name}_upscaled.{target_format}"
+
+    input_buffer = io.BytesIO(file_bytes)
+    output_buffer = io.BytesIO()
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(url, download=True)
-            filename = ydl.prepare_filename(info)
-            
-            if target_format == 'mp3':
-                base, _ = os.path.splitext(filename)
-                filename = f"{base}.mp3"
+        with Image.open(input_buffer) as img:
+            original_width, original_height = img.size
+            is_landscape = original_width >= original_height
 
-            if not os.path.exists(filename):
-                return jsonify({"error": "Conversion failed: Output file not found."}), 500
+            # Calculate target dimensions
+            target_long_edge = RESOLUTION_PRESETS[target_res]
+            if target_long_edge is None:
+                # "source" preset - just use original size
+                new_width, new_height = original_width, original_height
+            else:
+                if is_landscape:
+                    new_width = target_long_edge
+                    new_height = int((target_long_edge / original_width) * original_height)
+                else:
+                    new_height = target_long_edge
+                    new_width = int((target_long_edge / original_height) * original_width)
 
-            with open(filename, 'rb') as f:
-                file_data = io.BytesIO(f.read())
-            
-            try:
-                os.remove(filename)
-            except OSError:
-                pass
+            # Perform the upscale
+            upscaled = img.resize((new_width, new_height), resample=resample_method)
 
-            file_data.seek(0)
-            
-            safe_title = secure_filename(info.get('title', 'media'))
-            download_name = f"{safe_title}.{target_format}"
-            
-            return send_file(
-                file_data,
-                mimetype='audio/mpeg' if target_format == 'mp3' else 'video/mp4',
-                as_attachment=True,
-                download_name=download_name
-            )
+            # Handle output format
+            if target_format in ('jpg', 'jpeg'):
+                if upscaled.mode in ('RGBA', 'P', 'LA'):
+                    # Convert transparency to white background
+                    background = Image.new('RGB', upscaled.size, (255, 255, 255))
+                    if upscaled.mode == 'P':
+                        upscaled = upscaled.convert('RGBA')
+                    background.paste(upscaled, mask=upscaled.split()[-1] if upscaled.mode == 'RGBA' else None)
+                    upscaled = background
+                elif upscaled.mode != 'RGB':
+                    upscaled = upscaled.convert('RGB')
+                upscaled.save(output_buffer, format='JPEG', quality=92, optimize=True)
+                mimetype = 'image/jpeg'
+            elif target_format == 'webp':
+                upscaled.save(output_buffer, format='WEBP', quality=92, method=6)
+                mimetype = 'image/webp'
+            else:  # png
+                upscaled.save(output_buffer, format='PNG', optimize=True)
+                mimetype = 'image/png'
+
+        output_buffer.seek(0)
+        return send_file(
+            output_buffer,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=output_filename
+        )
     except Exception as e:
-        # THIS is the critical fix: Print the real error to Render logs
-        print(f"========== YT-DLP ERROR ==========")
-        print(f"URL: {url}")
-        print(f"Format: {target_format}")
-        print(f"Error: {str(e)}")
-        print(f"==================================")
-        
-        error_msg = str(e).lower()
-        if "duration" in error_msg or "match filter" in error_msg or "too long" in error_msg:
-            return jsonify({"error": "Video exceeds the 15-minute limit."}), 400
-        
-        # Return the actual error to the user for now (so we can see what's wrong)
-        return jsonify({"error": f"Debug: {str(e)}"}), 500
+        print(f"UPSCALE ERROR: {str(e)}")
+        return jsonify({"error": f"Upscale failed: {str(e)}"}), 500
+
 
 if __name__ == '__main__':
-    # Check for FFmpeg on startup
-    if shutil.which("ffmpeg") is None:
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-        print("WARNING: FFmpeg is not installed or not in PATH.")
-        print("The YouTube conversion feature will NOT work.")
-        print("Please install FFmpeg before deploying.")
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    
     app.run(host='127.0.0.1', port=5000, debug=False)
-
-@app.route('/healthz')
-def healthz():
-    # A lightweight endpoint for keep-alive pings
-    return 'ok', 200

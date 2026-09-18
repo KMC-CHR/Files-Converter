@@ -33,7 +33,7 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="#yt-section" class="nav-link">YouTube Extractor</a>
+                <a href="#upscale-section" class="nav-link">Image Upscaler</a>
                 <a href="#converter-card" class="nav-link">File Converter</a>
                 <a href="#how-it-works" class="nav-link">How it Works</a>
                 <a href="#faq-section" class="nav-link">FAQ</a>
@@ -42,51 +42,72 @@
 
         <!-- Hero Section -->
         <section class="hero-section">
-            <h1 class="hero-title">Universal File & Link Converter</h1>
-            <p class="hero-subtitle">Transform media, documents, and stream links instantly. No files are stored on our
-                servers.</p>
+            <h1 class="hero-title">Universal File & Image Converter</h1>
+            <p class="hero-subtitle">Transform media, convert documents, and upscale images instantly. No files are stored on our servers.</p>
         </section>
 
-        <!-- YouTube Extractor Card -->
-        <section class="yt-downloader-card" id="yt-section">
+        <!-- Image Upscaler Card -->
+        <section class="yt-downloader-card" id="upscale-section">
             <div class="yt-card-header">
-                <div class="yt-badge">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                        <path
-                            d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                <div class="yt-badge" style="color: var(--accent-blue);">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
                     </svg>
-                    <span>YouTube Extractor</span>
+                    <span>Image Upscaler</span>
                 </div>
-                <h2>Paste a link to extract audio or video</h2>
+                <h2>Increase your image resolution instantly</h2>
             </div>
 
-            <form class="yt-form-container" id="yt-form">
-                <!-- Row 1: Input with Paste Button -->
-                <div class="yt-input-wrapper">
-                    <input type="url" id="yt-url-input" class="yt-input"
-                        placeholder="https://www.youtube.com/watch?v=..." required>
-                    <button type="button" class="btn-paste-icon" id="paste-btn" title="Paste from clipboard">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
-                            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
-                        </svg>
+            <div class="upscale-container">
+                <!-- Upload Area -->
+                <div class="upscale-upload" id="upscale-upload">
+                    <input type="file" id="upscale-input" accept="image/*" style="display: none;">
+                    <button type="button" class="btn-primary-lg" id="upscale-select-btn">
+                        <span>Choose Image</span>
                     </button>
+                    <p class="upload-hint" id="upscale-filename">No file selected</p>
                 </div>
 
-                <!-- Row 2: Format Toggle & Submit -->
-                <div class="yt-controls-row">
-                    <div class="format-toggle">
-                        <input type="radio" name="yt-format" id="format-mp3" value="mp3" checked>
-                        <label for="format-mp3">Audio (MP3)</label>
-                        <input type="radio" name="yt-format" id="format-mp4" value="mp4">
-                        <label for="format-mp4">Video (MP4)</label>
+                <!-- Settings -->
+                <div class="upscale-controls">
+                    <div class="control-group">
+                        <label for="upscale-res">Target Resolution</label>
+                        <select class="native-styled-select" id="upscale-res">
+                            <option value="720p">HD (720p)</option>
+                            <option value="1080p" selected>Full HD (1080p)</option>
+                            <option value="1440p">2K (1440p)</option>
+                            <option value="2160p">4K (2160p)</option>
+                            <option value="source">Keep Original Size</option>
+                        </select>
                     </div>
-                    <button type="submit" class="btn-primary btn-yt" id="yt-submit-btn">
-                        <span>Fetch & Convert</span>
+
+                    <div class="control-group">
+                        <label for="upscale-format">Output Format</label>
+                        <select class="native-styled-select" id="upscale-format">
+                            <option value="png" selected>PNG</option>
+                            <option value="jpg">JPEG</option>
+                            <option value="webp">WEBP</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="upscale-filter">Quality Filter</label>
+                        <select class="native-styled-select" id="upscale-filter">
+                            <option value="lanczos" selected>Lanczos (Sharpest)</option>
+                            <option value="bicubic">Bicubic (Smooth)</option>
+                            <option value="bilinear">Bilinear (Balanced)</option>
+                            <option value="nearest">Nearest (Pixel Art)</option>
+                        </select>
+                    </div>
+
+                    <button type="button" class="btn-primary btn-yt" id="upscale-btn" disabled>
+                        <span>Upscale Image</span>
                     </button>
                 </div>
-            </form>
+            </div>
         </section>
 
         <!-- Main Converter Card -->
@@ -198,14 +219,15 @@
                     <div class="feature-icon">
                         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M9 18V5l12-2v13"></path>
-                            <circle cx="6" cy="18" r="3"></circle>
-                            <circle cx="18" cy="16" r="3"></circle>
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
                         </svg>
                     </div>
                     <div class="feature-text">
-                        <h3>YouTube Audio Extraction</h3>
-                        <p>Paste a YouTube link to extract high-quality MP3 audio or download the video as MP4.</p>
+                        <h3>Image Upscaling</h3>
+                        <p>Increase your image resolution to HD, Full HD, 2K, or 4K using Lanczos resampling for the sharpest results.</p>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -275,9 +297,8 @@
                         automatically as single files or a ZIP package if you have 3 or more files.</p>
                 </details>
                 <details class="faq-item">
-                    <summary>Why does the YouTube download take a while?</summary>
-                    <p>Our server must fetch the video, extract the audio using FFmpeg, and then send it back to you.
-                        This process takes a few seconds depending on the video length and server load.</p>
+                    <summary>Does upscaling make my images sharper?</summary>
+                    <p>Our upscaler uses Lanczos resampling, which is the sharpest non-AI algorithm available. However, it cannot add new detail that wasn't in the original image. For true AI upscaling, specialized models are required.</p>
                 </details>
             </div>
         </section>
@@ -304,66 +325,74 @@
         const globalFormatSelect = document.getElementById('global-format-select');
         const errorBanner = document.getElementById('error-banner');
 
-        const ytForm = document.getElementById('yt-form');
-        const ytUrlInput = document.getElementById('yt-url-input');
-        const ytSubmitBtn = document.getElementById('yt-submit-btn');
-        const pasteBtn = document.getElementById('paste-btn');
+        // --- Upscaler Logic ---
+        const upscaleInput = document.getElementById('upscale-input');
+        const upscaleSelectBtn = document.getElementById('upscale-select-btn');
+        const upscaleFilename = document.getElementById('upscale-filename');
+        const upscaleBtn = document.getElementById('upscale-btn');
+        const upscaleUpload = document.getElementById('upscale-upload');
 
-        const allowedImages = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'pdf'];
-        const MAX_FILES = 100;
+        let selectedUpscaleFile = null;
 
-        let fileStore = [];
-        let savedDirectoryHandle = null;
-
-        // --- YouTube Paste Button ---
-        pasteBtn.addEventListener('click', async () => {
-            try {
-                const text = await navigator.clipboard.readText();
-                ytUrlInput.value = text;
-            } catch (err) {
-                alert('Please allow clipboard access or paste manually.');
+        upscaleSelectBtn.addEventListener('click', () => upscaleInput.click());
+        upscaleUpload.addEventListener('click', (e) => {
+            if (e.target === upscaleUpload || e.target.tagName === 'P') {
+                upscaleInput.click();
             }
         });
 
-        // --- YouTube Form Submission ---
-        ytForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const url = ytUrlInput.value.trim();
-            const format = document.querySelector('input[name="yt-format"]:checked').value;
+        upscaleInput.addEventListener('change', () => {
+            if (upscaleInput.files.length) {
+                selectedUpscaleFile = upscaleInput.files[0];
+                upscaleFilename.textContent = `${selectedUpscaleFile.name} (${(selectedUpscaleFile.size / (1024 * 1024)).toFixed(2)} MB)`;
+                upscaleBtn.disabled = false;
+            }
+        });
 
-            if (!url) return;
+        upscaleBtn.addEventListener('click', async () => {
+            if (!selectedUpscaleFile) return;
 
-            ytSubmitBtn.disabled = true;
-            ytSubmitBtn.textContent = 'Processing...';
+            const formData = new FormData();
+            formData.append('file', selectedUpscaleFile);
+            formData.append('target_res', document.getElementById('upscale-res').value);
+            formData.append('target_format', document.getElementById('upscale-format').value);
+            formData.append('resample', document.getElementById('upscale-filter').value);
+
+            upscaleBtn.disabled = true;
+            upscaleBtn.textContent = 'Upscaling...';
 
             try {
-                const response = await fetch('/convert-yt', {
+                const response = await fetch('/upscale-single', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url: url, target_format: format })
+                    body: formData
                 });
 
                 if (!response.ok) {
                     const errData = await response.json();
-                    throw new Error(errData.error || 'Conversion failed');
+                    throw new Error(errData.error || 'Upscale failed');
                 }
 
                 const blob = await response.blob();
                 const downloadUrl = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = downloadUrl;
-                a.download = `media.${format}`;
+                const baseName = selectedUpscaleFile.name.replace(/\.[^/.]+$/, '');
+                const fmt = document.getElementById('upscale-format').value;
+                a.download = `${baseName}_upscaled.${fmt}`;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(downloadUrl);
 
-                ytUrlInput.value = '';
+                // Reset
+                selectedUpscaleFile = null;
+                upscaleInput.value = '';
+                upscaleFilename.textContent = 'No file selected';
             } catch (err) {
                 alert(err.message);
             } finally {
-                ytSubmitBtn.disabled = false;
-                ytSubmitBtn.textContent = 'Fetch & Convert';
+                upscaleBtn.disabled = false;
+                upscaleBtn.textContent = 'Upscale Image';
             }
         });
 

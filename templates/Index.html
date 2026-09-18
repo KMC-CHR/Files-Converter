@@ -62,13 +62,20 @@
             </div>
 
             <div class="upscale-container">
-                <!-- Upload Area -->
+                <!-- Upload Area (click OR drag) -->
                 <div class="upscale-upload" id="upscale-upload">
                     <input type="file" id="upscale-input" accept="image/*" style="display: none;">
-                    <button type="button" class="btn-primary-lg" id="upscale-select-btn">
-                        <span>Choose Image</span>
-                    </button>
-                    <p class="upload-hint" id="upscale-filename">No file selected</p>
+                    <div class="upload-icon-wrapper" style="pointer-events: none;">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </div>
+                    <h3 class="upscale-drop-title">Drag & Drop or Click to Upload</h3>
+                    <p class="upload-hint" id="upscale-filename">Supports PNG, JPG, WEBP, HEIC, HEIF</p>
                 </div>
 
                 <!-- Settings -->
@@ -93,14 +100,15 @@
                         </select>
                     </div>
 
-                  <div class="control-group">
+                    <div class="control-group">
                         <label for="upscale-filter">Quality Mode</label>
                         <select class="native-styled-select" id="upscale-filter">
-                            <option value="lanczos" selected>Best for Photos (Recommended)</option>
+                            <option value="lanczos" selected>Best for Photos</option>
                             <option value="bicubic">Softer / Smoother Look</option>
-                            <option value="bilinear">Fast & Simple (Blurry)</option>
-                            <option value="nearest">Pixel Art / Retro Games</option>
+                            <option value="bilinear">Fast & Blurry</option>
+                            <option value="nearest">Pixel Art / Retro</option>
                         </select>
+                        <p class="control-hint" id="filter-hint">Sharpest result. Best for photos and general use.</p>
                     </div>
 
                     <button type="button" class="btn-primary btn-yt" id="upscale-btn" disabled>
@@ -325,30 +333,86 @@
         const globalFormatSelect = document.getElementById('global-format-select');
         const errorBanner = document.getElementById('error-banner');
 
-        // --- Upscaler Logic ---
+        const allowedImages = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'pdf'];
+        const MAX_FILES = 100;
+
+        let fileStore = [];
+        let savedDirectoryHandle = null;
+
+        // ================================================================
+        // --- IMAGE UPSCALER LOGIC ---
+        // ================================================================
         const upscaleInput = document.getElementById('upscale-input');
-        const upscaleSelectBtn = document.getElementById('upscale-select-btn');
-        const upscaleFilename = document.getElementById('upscale-filename');
         const upscaleBtn = document.getElementById('upscale-btn');
         const upscaleUpload = document.getElementById('upscale-upload');
+        const upscaleFilename = document.getElementById('upscale-filename');
+        const filterSelect = document.getElementById('upscale-filter');
+        const filterHint = document.getElementById('filter-hint');
 
         let selectedUpscaleFile = null;
 
-        upscaleSelectBtn.addEventListener('click', () => upscaleInput.click());
-        upscaleUpload.addEventListener('click', (e) => {
-            if (e.target === upscaleUpload || e.target.tagName === 'P') {
-                upscaleInput.click();
+        // Click anywhere on the upload zone to open the file picker
+        upscaleUpload.addEventListener('click', () => {
+            upscaleInput.click();
+        });
+
+        // Drag events for the upscaler zone (isolated with stopPropagation)
+        ['dragenter', 'dragover'].forEach(evt => {
+            upscaleUpload.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                upscaleUpload.classList.add('drag-active');
+            });
+        });
+
+        ['dragleave', 'drop'].forEach(evt => {
+            upscaleUpload.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                upscaleUpload.classList.remove('drag-active');
+            });
+        });
+
+        upscaleUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleUpscaleFile(files[0]);
             }
         });
 
         upscaleInput.addEventListener('change', () => {
             if (upscaleInput.files.length) {
-                selectedUpscaleFile = upscaleInput.files[0];
-                upscaleFilename.textContent = `${selectedUpscaleFile.name} (${(selectedUpscaleFile.size / (1024 * 1024)).toFixed(2)} MB)`;
-                upscaleBtn.disabled = false;
+                handleUpscaleFile(upscaleInput.files[0]);
             }
         });
 
+        function handleUpscaleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Please select an image file.');
+                return;
+            }
+            selectedUpscaleFile = file;
+            upscaleFilename.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
+            upscaleBtn.disabled = false;
+        }
+
+        // Filter hint text updates when user changes the dropdown
+        const filterHints = {
+            lanczos: 'Sharpest result. Best for photos and general use.',
+            bicubic: 'Softer edges. Good for smoother-looking results.',
+            bilinear: 'Fast but blurry. Rarely the best choice.',
+            nearest: 'Blocky pixels. Only for pixel art or retro games.'
+        };
+
+        if (filterSelect && filterHint) {
+            filterSelect.addEventListener('change', () => {
+                filterHint.textContent = filterHints[filterSelect.value];
+            });
+        }
+
+        // Upscale button handler
         upscaleBtn.addEventListener('click', async () => {
             if (!selectedUpscaleFile) return;
 
@@ -387,7 +451,8 @@
                 // Reset
                 selectedUpscaleFile = null;
                 upscaleInput.value = '';
-                upscaleFilename.textContent = 'No file selected';
+                upscaleFilename.textContent = 'Supports PNG, JPG, WEBP, HEIC, HEIF';
+                upscaleBtn.disabled = true;
             } catch (err) {
                 alert(err.message);
             } finally {
@@ -396,7 +461,11 @@
             }
         });
 
-        // --- Drag and Drop Logic ---
+        // ================================================================
+        // --- MAIN BATCH CONVERTER LOGIC ---
+        // ================================================================
+
+        // Window-level drag events for the main converter card
         ['dragenter', 'dragover'].forEach(evt => {
             window.addEventListener(evt, (e) => {
                 e.preventDefault();

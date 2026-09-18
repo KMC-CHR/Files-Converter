@@ -117,7 +117,6 @@ def convert_yt():
     if not url:
         return jsonify({"error": "Please provide a valid YouTube URL."}), 400
     
-    # SSRF Protection: Ensure it's actually a YouTube URL
     if not YOUTUBE_REGEX.match(url):
         return jsonify({"error": "Invalid URL. Only YouTube links are allowed."}), 400
 
@@ -136,7 +135,6 @@ def convert_yt():
         }] if target_format == 'mp3' else [],
         'quiet': True,
         'no_warnings': True,
-        # SECURITY: Limit video duration to 15 minutes (900 seconds) to prevent abuse
         'match_filter': yt_dlp.utils.match_filter_func("duration < 900"),
     }
 
@@ -155,7 +153,6 @@ def convert_yt():
             with open(filename, 'rb') as f:
                 file_data = io.BytesIO(f.read())
             
-            # Clean up the temporary file immediately
             try:
                 os.remove(filename)
             except OSError:
@@ -163,7 +160,6 @@ def convert_yt():
 
             file_data.seek(0)
             
-            # Sanitize the YouTube title for the download name
             safe_title = secure_filename(info.get('title', 'media'))
             download_name = f"{safe_title}.{target_format}"
             
@@ -173,16 +169,20 @@ def convert_yt():
                 as_attachment=True,
                 download_name=download_name
             )
-    except yt_dlp.utils.DownloadError as e:
-        # Catch specific yt-dlp errors (like video too long or unavailable)
-        error_msg = str(e)
-        if "match filter" in error_msg or "duration" in error_msg:
-            return jsonify({"error": "Video exceeds the 15-minute limit."}), 400
-        return jsonify({"error": "Failed to download video. It may be private or region-locked."}), 400
     except Exception as e:
-        # Print the REAL error to Render logs so we can diagnose it
-        print(f"YT-DLP CRITICAL ERROR: {str(e)}")
-        return jsonify({"error": f"Server Error: {str(e)}"}), 500
+        # THIS is the critical fix: Print the real error to Render logs
+        print(f"========== YT-DLP ERROR ==========")
+        print(f"URL: {url}")
+        print(f"Format: {target_format}")
+        print(f"Error: {str(e)}")
+        print(f"==================================")
+        
+        error_msg = str(e).lower()
+        if "duration" in error_msg or "match filter" in error_msg or "too long" in error_msg:
+            return jsonify({"error": "Video exceeds the 15-minute limit."}), 400
+        
+        # Return the actual error to the user for now (so we can see what's wrong)
+        return jsonify({"error": f"Debug: {str(e)}"}), 500
 
 if __name__ == '__main__':
     # Check for FFmpeg on startup

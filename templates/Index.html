@@ -33,8 +33,8 @@
             </div>
 
             <nav class="nav-menu">
-                <a href="#upscale-section" class="nav-link">Image Upscaler</a>
                 <a href="#converter-card" class="nav-link">File Converter</a>
+                <a href="#upscale-section" class="nav-link">Image Upscaler</a>
                 <a href="#how-it-works" class="nav-link">How it Works</a>
                 <a href="#faq-section" class="nav-link">FAQ</a>
             </nav>
@@ -42,146 +42,50 @@
 
         <!-- Hero Section -->
         <section class="hero-section">
-            <h1 class="hero-title">Universal File & Image Converter</h1>
-            <p class="hero-subtitle">Transform media, convert documents, and upscale images instantly. No files are stored on our servers.</p>
+            <h1 class="hero-title">Convert, Compress, & Upscale</h1>
+            <p class="hero-subtitle">A private toolkit for transforming images, documents, and media — all in your browser. No files are stored on our servers.</p>
         </section>
 
-        <!-- Image Upscaler Card (with batch support) -->
-        <section class="yt-downloader-card" id="upscale-section">
-            <div class="yt-card-header">
-                <div class="yt-badge" style="color: var(--accent-blue);">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <polyline points="9 21 3 21 3 15"></polyline>
-                        <line x1="21" y1="3" x2="14" y2="10"></line>
-                        <line x1="3" y1="21" x2="10" y2="14"></line>
+        <!-- ============================================= -->
+        <!--  PRIMARY: File Converter (The Hero Feature)   -->
+        <!-- ============================================= -->
+        <section class="tool-card primary-tool" id="converter-card">
+            <div class="tool-header">
+                <div class="tool-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
-                    <span>Image Upscaler</span>
                 </div>
-                <h2>Increase your image resolution instantly</h2>
-            </div>
-
-            <div class="upscale-container">
-                <!-- Upload Area (click OR drag, supports multiple files) -->
-                <div class="upscale-upload" id="upscale-upload">
-                    <input type="file" id="upscale-input" accept="image/*" multiple style="display: none;">
-                    <div class="upload-icon-wrapper" style="pointer-events: none; margin-bottom: 12px;">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <polyline points="9 21 3 21 3 15"></polyline>
-                            <line x1="21" y1="3" x2="14" y2="10"></line>
-                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                        </svg>
-                    </div>
-                    <h3 style="pointer-events: none; font-family: var(--font-heading); font-size: 1rem; font-weight: 700; margin-bottom: 4px;">
-                        Drag & Drop or Click to Upload
-                    </h3>
-                    <p class="upload-hint" id="upscale-filename" style="pointer-events: none; margin-bottom: 0;">
-                        Supports PNG, JPG, WEBP, HEIC, HEIF • Multiple files allowed
-                    </p>
-                </div>
-
-                <!-- Global Settings (apply to all files) -->
-                <div class="upscale-controls">
-                    <div class="control-group">
-                        <label for="upscale-res">Target Resolution</label>
-                        <select class="native-styled-select" id="upscale-res">
-                            <option value="720p">HD (720p)</option>
-                            <option value="1080p" selected>Full HD (1080p)</option>
-                            <option value="1440p">2K (1440p)</option>
-                            <option value="2160p">4K (2160p)</option>
-                            <option value="source">Keep Original Size</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="upscale-format">Output Format</label>
-                        <select class="native-styled-select" id="upscale-format">
-                            <option value="png" selected>PNG</option>
-                            <option value="jpg">JPEG</option>
-                            <option value="webp">WEBP</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="upscale-filter">Quality Mode</label>
-                        <select class="native-styled-select" id="upscale-filter">
-                            <option value="lanczos" selected>Best for Photos</option>
-                            <option value="bicubic">Softer / Smoother Look</option>
-                            <option value="bilinear">Fast & Blurry</option>
-                            <option value="nearest">Pixel Art</option>
-                        </select>
-                        <p class="control-hint" id="filter-hint">Sharpest result. Best for photos and general use.</p>
-                    </div>
-                </div>
-
-                <!-- Upscaler File Queue -->
-                <div class="upscale-queue" id="upscale-queue" style="display: none;">
-                    <div class="card-toolbar">
-                        <div class="queue-stats">
-                            <span id="upscale-count">0 File(s)</span>
-                            <span class="dot-separator"></span>
-                            <span id="upscale-size">0.00 MB</span>
-                        </div>
-                        <div class="toolbar-actions">
-                            <button type="button" class="btn-icon-action" id="upscale-add-more" title="Add More Files">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                            <button type="button" class="btn-icon-action danger" id="upscale-clear-all" title="Clear Queue">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="file-list-wrapper" id="upscale-list"></div>
-                    <div class="batch-action-bar">
-                        <div class="global-target">
-                            <span class="folder-indicator">Upscale all at once or individually</span>
-                        </div>
-                        <button type="button" class="btn-primary" id="upscale-all-btn">
-                            <span>Upscale All</span>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
-                            </svg>
-                        </button>
-                    </div>
+                <div class="tool-title-group">
+                    <h2>File Converter</h2>
+                    <p>Convert HEIC, HEIF, PNG, JPG, and WEBP files to PNG, JPG, WEBP, or PDF. Batch up to 100 files at once.</p>
                 </div>
             </div>
-        </section>
 
-        <!-- Main Converter Card -->
-        <main class="converter-card" id="converter-card">
             <input type="file" id="file-input-hidden" multiple style="display: none;">
 
-            <!-- Drag & Drop / Empty State -->
             <div class="drag-canvas-container" id="drag-canvas">
+                <!-- Empty State -->
                 <div class="empty-state" id="empty-state">
                     <div class="upload-icon-wrapper">
-                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                             <polyline points="17 8 12 3 7 8"></polyline>
                             <line x1="12" y1="3" x2="12" y2="15"></line>
                         </svg>
                     </div>
-                    <h2>Choose Files or drag & drop here</h2>
-                    <p class="upload-hint">Supports Images (PNG, JPG, WEBP, HEIC, HEIF) and PDFs</p>
+                    <h3>Drop files here, or click to browse</h3>
+                    <p class="upload-hint">PNG • JPG • WEBP • HEIC • HEIF • PDF</p>
                     <button type="button" class="btn-primary-lg" id="select-files-btn">
                         <span>Choose Files</span>
                     </button>
                 </div>
 
-                <!-- Active State (File List) -->
+                <!-- Active State -->
                 <div class="active-state" id="active-state" style="display: none;">
                     <div class="card-toolbar">
                         <div class="queue-stats">
@@ -240,7 +144,130 @@
             </div>
 
             <div class="error-banner" id="error-banner"></div>
-        </main>
+        </section>
+
+        <!-- ============================================= -->
+        <!--  SECTION BREAK: Secondary tools label         -->
+        <!-- ============================================= -->
+        <div class="tools-divider">
+            <span>Specialty Tool</span>
+        </div>
+
+        <!-- ============================================= -->
+        <!--  SECONDARY: Image Upscaler                    -->
+        <!-- ============================================= -->
+        <section class="tool-card" id="upscale-section">
+            <div class="tool-header">
+                <div class="tool-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <polyline points="9 21 3 21 3 15"></polyline>
+                        <line x1="21" y1="3" x2="14" y2="10"></line>
+                        <line x1="3" y1="21" x2="10" y2="14"></line>
+                    </svg>
+                </div>
+                <div class="tool-title-group">
+                    <h2>Image Upscaler</h2>
+                    <p>Increase the resolution of your images to HD, Full HD, 2K, or 4K using high-quality resampling. Perfect for print, wallpaper, or social media.</p>
+                </div>
+            </div>
+
+            <div class="upscale-container">
+                <!-- Upload Area -->
+                <div class="upscale-upload" id="upscale-upload">
+                    <input type="file" id="upscale-input" accept="image/*" multiple style="display: none;">
+                    <div class="upload-icon-wrapper" style="pointer-events: none;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="15 3 21 3 21 9"></polyline>
+                            <polyline points="9 21 3 21 3 15"></polyline>
+                            <line x1="21" y1="3" x2="14" y2="10"></line>
+                            <line x1="3" y1="21" x2="10" y2="14"></line>
+                        </svg>
+                    </div>
+                    <h3 style="pointer-events: none;">Drop images here, or click to browse</h3>
+                    <p class="upload-hint" id="upscale-filename" style="pointer-events: none; margin-bottom: 0;">
+                        PNG • JPG • WEBP • HEIC • HEIF — Multiple files allowed
+                    </p>
+                </div>
+
+                <!-- Settings -->
+                <div class="upscale-controls">
+                    <div class="control-group">
+                        <label for="upscale-res">Target Resolution</label>
+                        <select class="native-styled-select" id="upscale-res">
+                            <option value="720p">HD (720p)</option>
+                            <option value="1080p" selected>Full HD (1080p)</option>
+                            <option value="1440p">2K (1440p)</option>
+                            <option value="2160p">4K (2160p)</option>
+                            <option value="source">Keep Original Size</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="upscale-format">Output Format</label>
+                        <select class="native-styled-select" id="upscale-format">
+                            <option value="png" selected>PNG (Lossless)</option>
+                            <option value="jpg">JPEG (Smaller)</option>
+                            <option value="webp">WEBP (Smallest)</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="upscale-filter">Quality Mode</label>
+                        <select class="native-styled-select" id="upscale-filter">
+                            <option value="lanczos" selected>Best for Photos</option>
+                            <option value="bicubic">Softer / Smoother Look</option>
+                            <option value="bilinear">Fast & Blurry</option>
+                            <option value="nearest">Pixel Art</option>
+                        </select>
+                        <p class="control-hint" id="filter-hint">Sharpest result. Best for photos and general use.</p>
+                    </div>
+                </div>
+
+                <!-- Queue -->
+                <div class="upscale-queue" id="upscale-queue" style="display: none;">
+                    <div class="card-toolbar">
+                        <div class="queue-stats">
+                            <span id="upscale-count">0 File(s)</span>
+                            <span class="dot-separator"></span>
+                            <span id="upscale-size">0.00 MB</span>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button type="button" class="btn-icon-action" id="upscale-add-more" title="Add More Files">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-icon-action danger" id="upscale-clear-all" title="Clear Queue">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="file-list-wrapper" id="upscale-list"></div>
+                    <div class="batch-action-bar">
+                        <div class="global-target">
+                            <span class="folder-indicator">3+ files download as a ZIP</span>
+                        </div>
+                        <button type="button" class="btn-primary" id="upscale-all-btn">
+                            <span>Upscale All</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <!-- Core Capabilities -->
         <section class="tools-directory" id="tools-directory">
@@ -256,8 +283,8 @@
                         </svg>
                     </div>
                     <div class="feature-text">
-                        <h3>Image & Document Conversion</h3>
-                        <p>Convert HEIC, HEIF, PNG, JPG, and WEBP files to PDF, PNG, JPG, or WEBP formats instantly.</p>
+                        <h3>Format Conversion</h3>
+                        <p>Convert between HEIC, HEIF, PNG, JPG, and WEBP — or turn any image into a PDF instantly.</p>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -271,8 +298,8 @@
                         </svg>
                     </div>
                     <div class="feature-text">
-                        <h3>Image Upscaling</h3>
-                        <p>Increase your image resolution to HD, Full HD, 2K, or 4K using Lanczos resampling for the sharpest results.</p>
+                        <h3>High-Quality Upscaling</h3>
+                        <p>Increase resolution up to 4K using Lanczos resampling — the sharpest non-AI algorithm available.</p>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -284,8 +311,7 @@
                     </div>
                     <div class="feature-text">
                         <h3>Batch Processing</h3>
-                        <p>Upload up to 100 files at once. The system will process them sequentially and package them
-                            into a ZIP file.</p>
+                        <p>Upload up to 100 files at once. Everything downloads as individual files or a single ZIP.</p>
                     </div>
                 </div>
                 <div class="feature-item">
@@ -298,8 +324,7 @@
                     </div>
                     <div class="feature-text">
                         <h3>Privacy First</h3>
-                        <p>Files are processed in temporary operational memory and are immediately cleared once sent
-                            back to your browser.</p>
+                        <p>Files are processed in temporary memory and cleared immediately — never logged or stored.</p>
                     </div>
                 </div>
             </div>
@@ -312,7 +337,7 @@
                 <div class="step-card">
                     <span class="step-number">1</span>
                     <h3>Add Your Files</h3>
-                    <p>Drag and drop multiple images into the upscaler or converter zones.</p>
+                    <p>Drag and drop multiple images into the converter or upscaler zones.</p>
                 </div>
                 <div class="step-card">
                     <span class="step-number">2</span>
@@ -322,7 +347,7 @@
                 <div class="step-card">
                     <span class="step-number">3</span>
                     <h3>Download</h3>
-                    <p>Click "Upscale All" or "Convert All". 3+ files are bundled into a single ZIP.</p>
+                    <p>Click "Convert All" or "Upscale All". 3+ files are bundled into a single ZIP.</p>
                 </div>
             </div>
         </section>
@@ -332,17 +357,20 @@
             <h2 class="section-title">Frequently Asked Questions</h2>
             <div class="faq-container">
                 <details class="faq-item">
-                    <summary>Are my files safe?</summary>
-                    <p>Yes. Files exist in temporary operational memory during processing and are immediately cleared
-                        once sent back to your browser. No files are logged or saved to server storage.</p>
+                    <summary>What's the difference between the File Converter and Image Upscaler?</summary>
+                    <p>The <strong>File Converter</strong> changes the format (e.g., HEIC to JPG, or images to PDF) without changing the resolution. The <strong>Image Upscaler</strong> increases the resolution (e.g., 1080p to 4K), making images larger and sharper.</p>
                 </details>
                 <details class="faq-item">
-                    <summary>Can I upscale or convert multiple images at once?</summary>
+                    <summary>Are my files safe?</summary>
+                    <p>Yes. Files exist in temporary operational memory during processing and are immediately cleared once sent back to your browser. No files are logged or saved to server storage.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>Can I process multiple images at once?</summary>
                     <p>Yes. Both tools support batch uploads up to 100 files. If you have 3 or more files, they will download automatically as a single ZIP package.</p>
                 </details>
                 <details class="faq-item">
                     <summary>Does upscaling make my images sharper?</summary>
-                    <p>Our upscaler uses Lanczos resampling, which is the sharpest non-AI algorithm available. It cannot invent new detail that wasn't in the original image, but it will produce the cleanest possible result. For AI-based enhancement, a dedicated AI upscaler is required.</p>
+                    <p>Our upscaler uses Lanczos resampling, the sharpest non-AI algorithm available. It cannot invent new detail that wasn't in the original image, but it produces the cleanest possible result. For AI-based enhancement, a dedicated AI upscaler is required.</p>
                 </details>
             </div>
         </section>
@@ -388,10 +416,8 @@
         const MAX_UPSCALE_FILES = 100;
         let upscaleStore = [];
 
-        // Click anywhere on the drop zone opens the picker
         upscaleUpload.addEventListener('click', () => upscaleInput.click());
 
-        // Drag & Drop on the upscaler zone
         ['dragenter', 'dragover'].forEach(evt => {
             upscaleUpload.addEventListener(evt, (e) => {
                 e.preventDefault();
@@ -449,7 +475,6 @@
             renderUpscaleList();
         });
 
-        // Filter hint text
         const filterHints = {
             lanczos:  'Sharpest result. Best for photos and general use.',
             bicubic:  'Softer edges. Good for smoother-looking results.',
@@ -465,13 +490,13 @@
 
             if (!upscaleStore.length) {
                 upscaleQueue.style.display = 'none';
+                upscaleFilename.textContent = 'PNG • JPG • WEBP • HEIC • HEIF — Multiple files allowed';
                 return;
             }
 
             upscaleQueue.style.display = 'block';
 
             let totalBytes = 0;
-
             upscaleStore.forEach(item => {
                 totalBytes += item.fileObject.size;
 
@@ -528,7 +553,7 @@
                     await writable.write(item.convertedBlob);
                     await writable.close();
                     return;
-                } catch (e) { /* fall through to default */ }
+                } catch (e) { /* fall through */ }
             }
 
             const url = window.URL.createObjectURL(item.convertedBlob);
@@ -567,7 +592,6 @@
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', '/upscale-single', true);
                         xhr.responseType = 'blob';
-
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable) {
                                 item.progress = Math.round((e.loaded / e.total) * 100);
@@ -588,11 +612,9 @@
                 } catch (err) {
                     item.status = 'Failed';
                 }
-
                 renderUpscaleList();
             }
 
-            // Download results
             const successful = upscaleStore.filter(i => i.status === 'Done' && i.convertedBlob);
 
             if (successful.length >= 3) {
@@ -600,7 +622,6 @@
                 const folder = zip.folder('Upscaled');
                 successful.forEach(item => folder.file(item.downloadName, item.convertedBlob));
                 const zipContent = await zip.generateAsync({ type: 'blob' });
-
                 const url = window.URL.createObjectURL(zipContent);
                 const a = document.createElement('a');
                 a.href = url;
@@ -639,7 +660,6 @@
         let fileStore = [];
         let savedDirectoryHandle = null;
 
-        // Drag and Drop on the converter card (window-level)
         ['dragenter', 'dragover'].forEach(evt => {
             window.addEventListener(evt, (e) => {
                 e.preventDefault();

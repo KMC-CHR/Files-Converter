@@ -46,7 +46,7 @@
             <p class="hero-subtitle">Transform media, convert documents, and upscale images instantly. No files are stored on our servers.</p>
         </section>
 
-        <!-- Image Upscaler Card -->
+        <!-- Image Upscaler Card (with batch support) -->
         <section class="yt-downloader-card" id="upscale-section">
             <div class="yt-card-header">
                 <div class="yt-badge" style="color: var(--accent-blue);">
@@ -62,11 +62,11 @@
             </div>
 
             <div class="upscale-container">
-                <!-- Upload Area (click OR drag) -->
+                <!-- Upload Area (click OR drag, supports multiple files) -->
                 <div class="upscale-upload" id="upscale-upload">
-                    <input type="file" id="upscale-input" accept="image/*" style="display: none;">
-                    <div class="upload-icon-wrapper" style="pointer-events: none;">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    <input type="file" id="upscale-input" accept="image/*" multiple style="display: none;">
+                    <div class="upload-icon-wrapper" style="pointer-events: none; margin-bottom: 12px;">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="15 3 21 3 21 9"></polyline>
                             <polyline points="9 21 3 21 3 15"></polyline>
@@ -74,11 +74,15 @@
                             <line x1="3" y1="21" x2="10" y2="14"></line>
                         </svg>
                     </div>
-                    <h3 class="upscale-drop-title">Drag & Drop or Click to Upload</h3>
-                    <p class="upload-hint" id="upscale-filename">Supports PNG, JPG, WEBP, HEIC, HEIF</p>
+                    <h3 style="pointer-events: none; font-family: var(--font-heading); font-size: 1rem; font-weight: 700; margin-bottom: 4px;">
+                        Drag & Drop or Click to Upload
+                    </h3>
+                    <p class="upload-hint" id="upscale-filename" style="pointer-events: none; margin-bottom: 0;">
+                        Supports PNG, JPG, WEBP, HEIC, HEIF • Multiple files allowed
+                    </p>
                 </div>
 
-                <!-- Settings -->
+                <!-- Global Settings (apply to all files) -->
                 <div class="upscale-controls">
                     <div class="control-group">
                         <label for="upscale-res">Target Resolution</label>
@@ -106,14 +110,51 @@
                             <option value="lanczos" selected>Best for Photos</option>
                             <option value="bicubic">Softer / Smoother Look</option>
                             <option value="bilinear">Fast & Blurry</option>
-                            <option value="nearest">Pixel Art / Retro</option>
+                            <option value="nearest">Pixel Art</option>
                         </select>
                         <p class="control-hint" id="filter-hint">Sharpest result. Best for photos and general use.</p>
                     </div>
+                </div>
 
-                    <button type="button" class="btn-primary btn-yt" id="upscale-btn" disabled>
-                        <span>Upscale Image</span>
-                    </button>
+                <!-- Upscaler File Queue -->
+                <div class="upscale-queue" id="upscale-queue" style="display: none;">
+                    <div class="card-toolbar">
+                        <div class="queue-stats">
+                            <span id="upscale-count">0 File(s)</span>
+                            <span class="dot-separator"></span>
+                            <span id="upscale-size">0.00 MB</span>
+                        </div>
+                        <div class="toolbar-actions">
+                            <button type="button" class="btn-icon-action" id="upscale-add-more" title="Add More Files">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </button>
+                            <button type="button" class="btn-icon-action danger" id="upscale-clear-all" title="Clear Queue">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="file-list-wrapper" id="upscale-list"></div>
+                    <div class="batch-action-bar">
+                        <div class="global-target">
+                            <span class="folder-indicator">Upscale all at once or individually</span>
+                        </div>
+                        <button type="button" class="btn-primary" id="upscale-all-btn">
+                            <span>Upscale All</span>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
@@ -152,9 +193,7 @@
                             <button type="button" class="btn-icon-action" id="select-folder-btn" title="Save Directory">
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path
-                                        d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z">
-                                    </path>
+                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
                                 </svg>
                             </button>
                             <button type="button" class="btn-icon-action" id="add-more-btn" title="Add Files">
@@ -168,9 +207,7 @@
                                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                     <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path
-                                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2">
-                                    </path>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                                 </svg>
                             </button>
                         </div>
@@ -270,22 +307,22 @@
 
         <!-- How it Works -->
         <section class="how-it-works-section" id="how-it-works">
-            <h2 class="section-title">How to Convert Files</h2>
+            <h2 class="section-title">How to Use</h2>
             <div class="steps-grid">
                 <div class="step-card">
                     <span class="step-number">1</span>
-                    <h3>Select Files</h3>
-                    <p>Click the Choose Files button or drag images into the drop area.</p>
+                    <h3>Add Your Files</h3>
+                    <p>Drag and drop multiple images into the upscaler or converter zones.</p>
                 </div>
                 <div class="step-card">
                     <span class="step-number">2</span>
-                    <h3>Set Format</h3>
-                    <p>Select target output formats individually or across the batch.</p>
+                    <h3>Choose Settings</h3>
+                    <p>Pick resolution, format, and quality mode — applied to all files in the queue.</p>
                 </div>
                 <div class="step-card">
                     <span class="step-number">3</span>
                     <h3>Download</h3>
-                    <p>Click Convert All to process and save files to your computer.</p>
+                    <p>Click "Upscale All" or "Convert All". 3+ files are bundled into a single ZIP.</p>
                 </div>
             </div>
         </section>
@@ -300,13 +337,12 @@
                         once sent back to your browser. No files are logged or saved to server storage.</p>
                 </details>
                 <details class="faq-item">
-                    <summary>Can I convert multiple images at once?</summary>
-                    <p>Yes. You can add up to 100 images to the processing queue. Converts run sequentially and download
-                        automatically as single files or a ZIP package if you have 3 or more files.</p>
+                    <summary>Can I upscale or convert multiple images at once?</summary>
+                    <p>Yes. Both tools support batch uploads up to 100 files. If you have 3 or more files, they will download automatically as a single ZIP package.</p>
                 </details>
                 <details class="faq-item">
                     <summary>Does upscaling make my images sharper?</summary>
-                    <p>Our upscaler uses Lanczos resampling, which is the sharpest non-AI algorithm available. However, it cannot add new detail that wasn't in the original image. For true AI upscaling, specialized models are required.</p>
+                    <p>Our upscaler uses Lanczos resampling, which is the sharpest non-AI algorithm available. It cannot invent new detail that wasn't in the original image, but it will produce the cleanest possible result. For AI-based enhancement, a dedicated AI upscaler is required.</p>
                 </details>
             </div>
         </section>
@@ -317,46 +353,45 @@
     </div>
 
     <script>
-        const fileInputHidden = document.getElementById('file-input-hidden');
-        const dragCanvas = document.getElementById('drag-canvas');
-        const emptyState = document.getElementById('empty-state');
-        const activeState = document.getElementById('active-state');
-        const selectFilesBtn = document.getElementById('select-files-btn');
-        const addMoreBtn = document.getElementById('add-more-btn');
-        const selectFolderBtn = document.getElementById('select-folder-btn');
-        const folderIndicator = document.getElementById('folder-indicator');
-        const fileListContainer = document.getElementById('file-list-container');
-        const queueCount = document.getElementById('queue-count');
-        const queueSize = document.getElementById('queue-size');
-        const clearAllBtn = document.getElementById('clear-all-btn');
-        const convertAllBtn = document.getElementById('convert-all-btn');
-        const globalFormatSelect = document.getElementById('global-format-select');
-        const errorBanner = document.getElementById('error-banner');
+        // ============================================
+        // ===  SHARED HELPERS  =======================
+        // ============================================
+        function formatSize(bytes) {
+            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+        }
 
-        const allowedImages = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'pdf'];
-        const MAX_FILES = 100;
+        function baseName(filename) {
+            return filename.includes('.')
+                ? filename.substring(0, filename.lastIndexOf('.'))
+                : filename;
+        }
 
-        let fileStore = [];
-        let savedDirectoryHandle = null;
+        // ============================================
+        // ===  UPSCALER LOGIC  =======================
+        // ============================================
+        const upscaleInput       = document.getElementById('upscale-input');
+        const upscaleUpload      = document.getElementById('upscale-upload');
+        const upscaleFilename    = document.getElementById('upscale-filename');
+        const upscaleQueue       = document.getElementById('upscale-queue');
+        const upscaleList        = document.getElementById('upscale-list');
+        const upscaleCount       = document.getElementById('upscale-count');
+        const upscaleSize        = document.getElementById('upscale-size');
+        const upscaleAddMore     = document.getElementById('upscale-add-more');
+        const upscaleClearAll    = document.getElementById('upscale-clear-all');
+        const upscaleAllBtn      = document.getElementById('upscale-all-btn');
+        const upscaleRes         = document.getElementById('upscale-res');
+        const upscaleFormat      = document.getElementById('upscale-format');
+        const upscaleFilter      = document.getElementById('upscale-filter');
+        const filterHint         = document.getElementById('filter-hint');
 
-        // ================================================================
-        // --- IMAGE UPSCALER LOGIC ---
-        // ================================================================
-        const upscaleInput = document.getElementById('upscale-input');
-        const upscaleBtn = document.getElementById('upscale-btn');
-        const upscaleUpload = document.getElementById('upscale-upload');
-        const upscaleFilename = document.getElementById('upscale-filename');
-        const filterSelect = document.getElementById('upscale-filter');
-        const filterHint = document.getElementById('filter-hint');
+        const UPSCALE_ALLOWED = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+        const MAX_UPSCALE_FILES = 100;
+        let upscaleStore = [];
 
-        let selectedUpscaleFile = null;
+        // Click anywhere on the drop zone opens the picker
+        upscaleUpload.addEventListener('click', () => upscaleInput.click());
 
-        // Click anywhere on the upload zone to open the file picker
-        upscaleUpload.addEventListener('click', () => {
-            upscaleInput.click();
-        });
-
-        // Drag events for the upscaler zone (isolated with stopPropagation)
+        // Drag & Drop on the upscaler zone
         ['dragenter', 'dragover'].forEach(evt => {
             upscaleUpload.addEventListener(evt, (e) => {
                 e.preventDefault();
@@ -364,7 +399,6 @@
                 upscaleUpload.classList.add('drag-active');
             });
         });
-
         ['dragleave', 'drop'].forEach(evt => {
             upscaleUpload.addEventListener(evt, (e) => {
                 e.preventDefault();
@@ -372,115 +406,255 @@
                 upscaleUpload.classList.remove('drag-active');
             });
         });
-
         upscaleUpload.addEventListener('drop', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleUpscaleFile(files[0]);
-            }
+            if (e.dataTransfer.files.length) addUpscaleFiles(e.dataTransfer.files);
         });
 
         upscaleInput.addEventListener('change', () => {
-            if (upscaleInput.files.length) {
-                handleUpscaleFile(upscaleInput.files[0]);
-            }
+            if (upscaleInput.files.length) addUpscaleFiles(upscaleInput.files);
         });
+        upscaleAddMore.addEventListener('click', () => upscaleInput.click());
 
-        function handleUpscaleFile(file) {
-            if (!file.type.startsWith('image/')) {
-                alert('Please select an image file.');
+        function addUpscaleFiles(fileList) {
+            const incoming = Array.from(fileList);
+            if (upscaleStore.length + incoming.length > MAX_UPSCALE_FILES) {
+                alert(`You can only queue up to ${MAX_UPSCALE_FILES} files at a time.`);
                 return;
             }
-            selectedUpscaleFile = file;
-            upscaleFilename.textContent = `${file.name} (${(file.size / (1024 * 1024)).toFixed(2)} MB)`;
-            upscaleBtn.disabled = false;
-        }
-
-        // Filter hint text updates when user changes the dropdown
-        const filterHints = {
-            lanczos: 'Sharpest result. Best for photos and general use.',
-            bicubic: 'Softer edges. Good for smoother-looking results.',
-            bilinear: 'Fast but blurry. Rarely the best choice.',
-            nearest: 'Blocky pixels. Only for pixel art or retro games.'
-        };
-
-        if (filterSelect && filterHint) {
-            filterSelect.addEventListener('change', () => {
-                filterHint.textContent = filterHints[filterSelect.value];
-            });
-        }
-
-        // Upscale button handler
-        upscaleBtn.addEventListener('click', async () => {
-            if (!selectedUpscaleFile) return;
-
-            const formData = new FormData();
-            formData.append('file', selectedUpscaleFile);
-            formData.append('target_res', document.getElementById('upscale-res').value);
-            formData.append('target_format', document.getElementById('upscale-format').value);
-            formData.append('resample', document.getElementById('upscale-filter').value);
-
-            upscaleBtn.disabled = true;
-            upscaleBtn.textContent = 'Upscaling...';
-
-            try {
-                const response = await fetch('/upscale-single', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error || 'Upscale failed');
+            incoming.forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (UPSCALE_ALLOWED.includes(ext)) {
+                    upscaleStore.push({
+                        id: Math.random().toString(36).substring(2, 9),
+                        fileObject: file,
+                        status: 'Ready',
+                        progress: 0,
+                        convertedBlob: null,
+                        downloadName: null
+                    });
                 }
+            });
+            renderUpscaleList();
+        }
 
-                const blob = await response.blob();
-                const downloadUrl = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = downloadUrl;
-                const baseName = selectedUpscaleFile.name.replace(/\.[^/.]+$/, '');
-                const fmt = document.getElementById('upscale-format').value;
-                a.download = `${baseName}_upscaled.${fmt}`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(downloadUrl);
+        function removeUpscaleFile(id) {
+            upscaleStore = upscaleStore.filter(item => item.id !== id);
+            renderUpscaleList();
+        }
 
-                // Reset
-                selectedUpscaleFile = null;
-                upscaleInput.value = '';
-                upscaleFilename.textContent = 'Supports PNG, JPG, WEBP, HEIC, HEIF';
-                upscaleBtn.disabled = true;
-            } catch (err) {
-                alert(err.message);
-            } finally {
-                upscaleBtn.disabled = false;
-                upscaleBtn.textContent = 'Upscale Image';
-            }
+        upscaleClearAll.addEventListener('click', () => {
+            upscaleStore = [];
+            renderUpscaleList();
         });
 
-        // ================================================================
-        // --- MAIN BATCH CONVERTER LOGIC ---
-        // ================================================================
+        // Filter hint text
+        const filterHints = {
+            lanczos:  'Sharpest result. Best for photos and general use.',
+            bicubic:  'Softer edges. Good for smoother-looking results.',
+            bilinear: 'Fast but blurry. Rarely the best choice.',
+            nearest:  'Blocky pixels. Only for pixel art or retro games.'
+        };
+        upscaleFilter.addEventListener('change', () => {
+            filterHint.textContent = filterHints[upscaleFilter.value];
+        });
 
-        // Window-level drag events for the main converter card
+        function renderUpscaleList() {
+            upscaleList.innerHTML = '';
+
+            if (!upscaleStore.length) {
+                upscaleQueue.style.display = 'none';
+                return;
+            }
+
+            upscaleQueue.style.display = 'block';
+
+            let totalBytes = 0;
+
+            upscaleStore.forEach(item => {
+                totalBytes += item.fileObject.size;
+
+                const card = document.createElement('div');
+                card.className = 'file-item-card';
+
+                const iconSvg = `<svg class="item-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+
+                const downloadBtnHtml = item.convertedBlob
+                    ? `<button type="button" class="btn-icon-success" onclick="saveUpscaledFile('${item.id}')" title="Download">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>`
+                    : '';
+
+                const statusContent = item.status === 'Upscaling...'
+                    ? `<div class="inline-row-progress">
+                        <div class="row-progress-bar"><div class="row-progress-fill" style="width: ${item.progress}%"></div></div>
+                        <span class="row-progress-text">${item.progress}%</span>
+                       </div>`
+                    : `<span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>`;
+
+                card.innerHTML = `
+                    <div class="item-left">
+                        ${iconSvg}
+                        <div class="item-details">
+                            <span class="item-name" title="${item.fileObject.name}">${item.fileObject.name}</span>
+                            <span class="item-sizes">${formatSize(item.fileObject.size)}</span>
+                        </div>
+                    </div>
+                    <div class="item-right">
+                        ${statusContent}
+                        ${downloadBtnHtml}
+                        <button type="button" class="btn-icon-danger" onclick="removeUpscaleFile('${item.id}')" title="Remove">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                `;
+                upscaleList.appendChild(card);
+            });
+
+            upscaleCount.textContent = `${upscaleStore.length} File(s)`;
+            upscaleSize.textContent  = formatSize(totalBytes);
+            upscaleFilename.textContent = `${upscaleStore.length} file(s) queued`;
+        }
+
+        async function saveUpscaledFile(id) {
+            const item = upscaleStore.find(i => i.id === id);
+            if (!item || !item.convertedBlob) return;
+
+            if (savedDirectoryHandle) {
+                try {
+                    const fileHandle = await savedDirectoryHandle.getFileHandle(item.downloadName, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(item.convertedBlob);
+                    await writable.close();
+                    return;
+                } catch (e) { /* fall through to default */ }
+            }
+
+            const url = window.URL.createObjectURL(item.convertedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.downloadName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        upscaleAllBtn.addEventListener('click', async () => {
+            if (!upscaleStore.length) return;
+
+            upscaleAllBtn.disabled = true;
+            upscaleAllBtn.querySelector('span').textContent = 'Upscaling...';
+
+            const res    = upscaleRes.value;
+            const format = upscaleFormat.value;
+            const filter = upscaleFilter.value;
+
+            for (const item of upscaleStore) {
+                if (item.status === 'Done') continue;
+
+                item.status = 'Upscaling...';
+                item.progress = 0;
+                renderUpscaleList();
+
+                const formData = new FormData();
+                formData.append('file', item.fileObject);
+                formData.append('target_res', res);
+                formData.append('target_format', format);
+                formData.append('resample', filter);
+
+                try {
+                    const blob = await new Promise((resolve, reject) => {
+                        const xhr = new XMLHttpRequest();
+                        xhr.open('POST', '/upscale-single', true);
+                        xhr.responseType = 'blob';
+
+                        xhr.upload.onprogress = (e) => {
+                            if (e.lengthComputable) {
+                                item.progress = Math.round((e.loaded / e.total) * 100);
+                                renderUpscaleList();
+                            }
+                        };
+                        xhr.onload = () => {
+                            if (xhr.status === 200) resolve(xhr.response);
+                            else reject(new Error('Upscale failed'));
+                        };
+                        xhr.onerror = () => reject(new Error('Network error'));
+                        xhr.send(formData);
+                    });
+
+                    item.status = 'Done';
+                    item.convertedBlob = blob;
+                    item.downloadName = `${baseName(item.fileObject.name)}_upscaled.${format}`;
+                } catch (err) {
+                    item.status = 'Failed';
+                }
+
+                renderUpscaleList();
+            }
+
+            // Download results
+            const successful = upscaleStore.filter(i => i.status === 'Done' && i.convertedBlob);
+
+            if (successful.length >= 3) {
+                const zip = new JSZip();
+                const folder = zip.folder('Upscaled');
+                successful.forEach(item => folder.file(item.downloadName, item.convertedBlob));
+                const zipContent = await zip.generateAsync({ type: 'blob' });
+
+                const url = window.URL.createObjectURL(zipContent);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Upscaled_Images.zip';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                for (const item of successful) await saveUpscaledFile(item.id);
+            }
+
+            upscaleAllBtn.disabled = false;
+            upscaleAllBtn.querySelector('span').textContent = 'Upscale All';
+        });
+
+        // ============================================
+        // ===  FILE CONVERTER LOGIC  =================
+        // ============================================
+        const fileInputHidden    = document.getElementById('file-input-hidden');
+        const dragCanvas         = document.getElementById('drag-canvas');
+        const emptyState         = document.getElementById('empty-state');
+        const activeState        = document.getElementById('active-state');
+        const selectFilesBtn     = document.getElementById('select-files-btn');
+        const addMoreBtn         = document.getElementById('add-more-btn');
+        const selectFolderBtn    = document.getElementById('select-folder-btn');
+        const folderIndicator    = document.getElementById('folder-indicator');
+        const fileListContainer  = document.getElementById('file-list-container');
+        const queueCount         = document.getElementById('queue-count');
+        const queueSize          = document.getElementById('queue-size');
+        const clearAllBtn        = document.getElementById('clear-all-btn');
+        const convertAllBtn      = document.getElementById('convert-all-btn');
+        const globalFormatSelect = document.getElementById('global-format-select');
+        const errorBanner        = document.getElementById('error-banner');
+
+        const CONVERT_ALLOWED = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'pdf'];
+        const MAX_FILES = 100;
+        let fileStore = [];
+        let savedDirectoryHandle = null;
+
+        // Drag and Drop on the converter card (window-level)
         ['dragenter', 'dragover'].forEach(evt => {
             window.addEventListener(evt, (e) => {
                 e.preventDefault();
+                if (e.target.closest && e.target.closest('#upscale-upload')) return;
                 dragCanvas.classList.add('canvas-active');
             });
         });
-
         ['dragleave', 'drop'].forEach(evt => {
             window.addEventListener(evt, (e) => {
                 e.preventDefault();
                 dragCanvas.classList.remove('canvas-active');
             });
         });
-
         window.addEventListener('drop', (e) => {
+            if (e.target.closest && e.target.closest('#upscale-upload')) return;
             e.preventDefault();
             if (e.dataTransfer.files.length) appendFiles(e.dataTransfer.files);
         });
@@ -491,7 +665,6 @@
             if (fileInputHidden.files.length) appendFiles(fileInputHidden.files);
         });
 
-        // --- Folder Selection ---
         selectFolderBtn.addEventListener('click', async () => {
             if ('showDirectoryPicker' in window) {
                 try {
@@ -509,20 +682,17 @@
             }
         });
 
-        // --- File Processing Logic ---
         function appendFiles(newFiles) {
             errorBanner.style.display = 'none';
             const incoming = Array.from(newFiles);
-
             if (fileStore.length + incoming.length > MAX_FILES) {
                 errorBanner.textContent = `You can only add up to ${MAX_FILES} files at a time.`;
                 errorBanner.style.display = 'block';
                 return;
             }
-
             incoming.forEach(file => {
                 const ext = file.name.split('.').pop().toLowerCase();
-                if (allowedImages.includes(ext)) {
+                if (CONVERT_ALLOWED.includes(ext)) {
                     fileStore.push({
                         id: Math.random().toString(36).substring(2, 9),
                         fileObject: file,
@@ -533,7 +703,6 @@
                     });
                 }
             });
-
             renderList();
         }
 
@@ -544,7 +713,6 @@
 
         async function saveConvertedFile(item) {
             if (!item.convertedBlob) return;
-
             if (savedDirectoryHandle) {
                 try {
                     const fileHandle = await savedDirectoryHandle.getFileHandle(item.downloadName, { create: true });
@@ -552,11 +720,8 @@
                     await writable.write(item.convertedBlob);
                     await writable.close();
                     return;
-                } catch (e) {
-                    // Fallback
-                }
+                } catch (e) { /* fallback */ }
             }
-
             const url = window.URL.createObjectURL(item.convertedBlob);
             const a = document.createElement('a');
             a.href = url;
@@ -573,9 +738,7 @@
 
         globalFormatSelect.addEventListener('change', (e) => {
             const val = e.target.value;
-            fileStore.forEach(item => {
-                item.targetFormat = val;
-            });
+            fileStore.forEach(item => { item.targetFormat = val; });
             renderList();
         });
 
@@ -586,12 +749,10 @@
                 activeState.style.display = 'none';
                 return;
             }
-
             emptyState.style.display = 'none';
             activeState.style.display = 'block';
 
             let totalBytes = 0;
-
             fileStore.forEach((item) => {
                 totalBytes += item.fileObject.size;
 
@@ -600,33 +761,30 @@
 
                 const formatOptions = [
                     { val: 'webp', text: 'WEBP' },
-                    { val: 'png', text: 'PNG' },
-                    { val: 'jpg', text: 'JPEG' },
-                    { val: 'pdf', text: 'PDF' }
+                    { val: 'png',  text: 'PNG' },
+                    { val: 'jpg',  text: 'JPEG' },
+                    { val: 'pdf',  text: 'PDF' }
                 ];
-
                 const iconSvg = `<svg class="item-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
-
                 const optionsHtml = formatOptions.map(opt => `<option value="${opt.val}" ${opt.val === item.targetFormat ? 'selected' : ''}>${opt.text}</option>`).join('');
-
-                const downloadBtnHtml = item.convertedBlob ?
-                    `<button type="button" class="btn-icon-success" onclick="saveConvertedFile(fileStore.find(i => i.id === '${item.id}'))" title="Download File">
+                const downloadBtnHtml = item.convertedBlob
+                    ? `<button type="button" class="btn-icon-success" onclick="saveConvertedFile(fileStore.find(i => i.id === '${item.id}'))" title="Download File">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    </button>` : '';
-
-                const statusContent = item.status === 'Converting...' ?
-                    `<div class="inline-row-progress">
+                       </button>`
+                    : '';
+                const statusContent = item.status === 'Converting...'
+                    ? `<div class="inline-row-progress">
                         <div class="row-progress-bar"><div class="row-progress-fill" style="width: ${item.progress}%"></div></div>
                         <span class="row-progress-text">${item.progress}%</span>
-                    </div>` :
-                    `<span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>`;
+                       </div>`
+                    : `<span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>`;
 
                 card.innerHTML = `
                     <div class="item-left">
                         ${iconSvg}
                         <div class="item-details">
                             <span class="item-name" title="${item.fileObject.name}">${item.fileObject.name}</span>
-                            <span class="item-sizes">${(item.fileObject.size / (1024 * 1024)).toFixed(2)} MB</span>
+                            <span class="item-sizes">${formatSize(item.fileObject.size)}</span>
                         </div>
                     </div>
                     <div class="item-right">
@@ -648,26 +806,20 @@
                     const id = e.target.getAttribute('data-id');
                     const newVal = e.target.value;
                     const item = fileStore.find(i => i.id === id);
-                    if (item) {
-                        item.targetFormat = newVal;
-                        renderList();
-                    }
+                    if (item) { item.targetFormat = newVal; renderList(); }
                 });
             });
 
             queueCount.textContent = `${fileStore.length} File(s)`;
-            queueSize.textContent = `${(totalBytes / (1024 * 1024)).toFixed(2)} MB`;
+            queueSize.textContent  = formatSize(totalBytes);
         }
 
         async function processSequentialQueue() {
             if (!fileStore.length) return;
-
             errorBanner.style.display = 'none';
             convertAllBtn.disabled = true;
 
-            const total = fileStore.length;
-
-            for (let i = 0; i < total; i++) {
+            for (let i = 0; i < fileStore.length; i++) {
                 const item = fileStore[i];
                 if (item.status === 'Done') continue;
 
@@ -684,37 +836,26 @@
                         const xhr = new XMLHttpRequest();
                         xhr.open('POST', '/convert-single', true);
                         xhr.responseType = 'blob';
-
                         xhr.upload.onprogress = (e) => {
                             if (e.lengthComputable) {
                                 item.progress = Math.round((e.loaded / e.total) * 100);
                                 renderList();
                             }
                         };
-
                         xhr.onload = () => {
-                            if (xhr.status === 200) {
-                                resolve(xhr.response);
-                            } else {
-                                reject(new Error('Conversion failed'));
-                            }
+                            if (xhr.status === 200) resolve(xhr.response);
+                            else reject(new Error('Conversion failed'));
                         };
-
                         xhr.onerror = () => reject(new Error('Network error'));
                         xhr.send(formData);
                     });
 
                     item.status = 'Done';
                     item.convertedBlob = blob;
-
-                    const baseName = item.fileObject.name.includes('.')
-                        ? item.fileObject.name.substring(0, item.fileObject.name.lastIndexOf('.'))
-                        : item.fileObject.name;
-                    item.downloadName = `${baseName}.${item.targetFormat}`;
+                    item.downloadName = `${baseName(item.fileObject.name)}.${item.targetFormat}`;
                 } catch (err) {
                     item.status = 'Failed';
                 }
-
                 renderList();
             }
 
@@ -722,17 +863,13 @@
 
             if (successfulItems.length >= 3) {
                 const zip = new JSZip();
-                const folder = zip.folder("Converted_Files");
-
-                successfulItems.forEach(item => {
-                    folder.file(item.downloadName, item.convertedBlob);
-                });
-
-                const zipContent = await zip.generateAsync({ type: "blob" });
+                const folder = zip.folder('Converted_Files');
+                successfulItems.forEach(item => folder.file(item.downloadName, item.convertedBlob));
+                const zipContent = await zip.generateAsync({ type: 'blob' });
 
                 if (savedDirectoryHandle) {
                     try {
-                        const fileHandle = await savedDirectoryHandle.getFileHandle("Converted_Files.zip", { create: true });
+                        const fileHandle = await savedDirectoryHandle.getFileHandle('Converted_Files.zip', { create: true });
                         const writable = await fileHandle.createWritable();
                         await writable.write(zipContent);
                         await writable.close();
@@ -740,7 +877,7 @@
                         const url = window.URL.createObjectURL(zipContent);
                         const a = document.createElement('a');
                         a.href = url;
-                        a.download = "Converted_Files.zip";
+                        a.download = 'Converted_Files.zip';
                         a.click();
                         window.URL.revokeObjectURL(url);
                     }
@@ -748,14 +885,12 @@
                     const url = window.URL.createObjectURL(zipContent);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = "Converted_Files.zip";
+                    a.download = 'Converted_Files.zip';
                     a.click();
                     window.URL.revokeObjectURL(url);
                 }
             } else {
-                for (let i = 0; i < successfulItems.length; i++) {
-                    await saveConvertedFile(successfulItems[i]);
-                }
+                for (const item of successfulItems) await saveConvertedFile(item);
             }
 
             convertAllBtn.disabled = false;

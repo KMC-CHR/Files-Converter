@@ -67,8 +67,6 @@ body {
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
 
-    /* Layer 1: ambient spotlight from the top-center */
-    /* Layer 2 & 3: faint 40px grid */
     background-color: var(--bg-base);
     background-image:
         radial-gradient(ellipse 1000px 500px at 50% -5%,
@@ -86,7 +84,6 @@ body {
     transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-/* Film grain overlay — sits above the background but below content */
 body::before {
     content: '';
     position: fixed;
@@ -147,6 +144,9 @@ body::before {
 }
 
 .nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
     color: var(--text-secondary);
     text-decoration: none;
     font-size: 0.85rem;
@@ -193,6 +193,7 @@ body::before {
     transition: color 0.15s ease, border-color 0.15s ease;
     position: relative;
     margin-bottom: -1px;
+    white-space: nowrap;
 }
 
 .tab-btn:hover {
@@ -822,15 +823,13 @@ body::before {
     }
 }
 
-/* Mobile (< 640) */
+/* Mobile (< 640) — Scrollable tab bar with visible labels */
 @media (max-width: 640px) {
     body {
         padding: 24px 12px 40px;
-        /* background-attachment: fixed can lag on mobile with grain overlay */
         background-attachment: scroll;
     }
 
-    /* Reduce grain on mobile for perf */
     body::before {
         opacity: calc(var(--grain-opacity) * 0.75);
     }
@@ -851,25 +850,38 @@ body::before {
         border-radius: 14px;
     }
 
+    /* --- KEY FIX: Scrollable tab bar with visible labels --- */
     .tab-bar {
-        padding: 0 12px;
+        padding: 0 8px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        flex-wrap: nowrap;
+        scroll-behavior: smooth;
     }
 
-    .tab-btn {
-        padding: 14px 10px;
-        font-size: 0.8rem;
-        gap: 6px;
-        flex: 1;
-        justify-content: center;
-    }
-
-    .tab-btn span {
+    .tab-bar::-webkit-scrollbar {
         display: none;
     }
 
+    .tab-btn {
+        padding: 14px 14px;
+        font-size: 0.8rem;
+        gap: 6px;
+        flex: 0 0 auto;
+        white-space: nowrap;
+        justify-content: center;
+    }
+
+    /* Keep the labels visible — do NOT hide them */
+    .tab-btn span {
+        display: inline;
+    }
+
     .tab-btn svg {
-        width: 18px;
-        height: 18px;
+        width: 16px;
+        height: 16px;
     }
 
     .tab-panel {

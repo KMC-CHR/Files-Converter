@@ -4,9 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniShift | Universal Media & Document Hub</title>
+    <title>OmniShift</title>
 
-    <!-- Satoshi & Inter Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,369 +19,388 @@
     <div class="workspace-container">
         <!-- Header -->
         <header class="app-header">
-            <div class="brand">
-                <a href="/" class="brand-link">
-                    <div class="brand-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
-                        </svg>
-                    </div>
-                    <span class="brand-name">OmniShift</span>
-                </a>
-            </div>
+            <a href="/" class="brand-link">
+                <div class="brand-icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                    </svg>
+                </div>
+                <span class="brand-name">OmniShift</span>
+            </a>
 
             <nav class="nav-menu">
-                <a href="#converter-card" class="nav-link">File Converter</a>
-                <a href="#upscale-section" class="nav-link">Image Upscaler</a>
-                <a href="#how-it-works" class="nav-link">How it Works</a>
                 <a href="#faq-section" class="nav-link">FAQ</a>
             </nav>
         </header>
 
-        <!-- Hero Section -->
-        <section class="hero-section">
-            <h1 class="hero-title">Convert, Compress, & Upscale</h1>
-            <p class="hero-subtitle">A private toolkit for transforming images, documents, and media — all in your browser. No files are stored on our servers.</p>
-        </section>
-
-        <!-- ============================================= -->
-        <!--  PRIMARY: File Converter (The Hero Feature)   -->
-        <!-- ============================================= -->
-        <section class="tool-card primary-tool" id="converter-card">
-            <div class="tool-header">
-                <div class="tool-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <!-- Tab Container -->
+        <div class="tab-container">
+            <div class="tab-bar" role="tablist">
+                <button class="tab-btn active" data-tab="convert" role="tab" aria-selected="true">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                         <polyline points="17 8 12 3 7 8"></polyline>
                         <line x1="12" y1="3" x2="12" y2="15"></line>
                     </svg>
-                </div>
-                <div class="tool-title-group">
-                    <h2>File Converter</h2>
-                    <p>Convert HEIC, HEIF, PNG, JPG, and WEBP files to PNG, JPG, WEBP, or PDF. Batch up to 100 files at once.</p>
-                </div>
-            </div>
-
-            <input type="file" id="file-input-hidden" multiple style="display: none;">
-
-            <div class="drag-canvas-container" id="drag-canvas">
-                <!-- Empty State -->
-                <div class="empty-state" id="empty-state">
-                    <div class="upload-icon-wrapper">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                    </div>
-                    <h3>Drop files here, or click to browse</h3>
-                    <p class="upload-hint">PNG • JPG • WEBP • HEIC • HEIF • PDF</p>
-                    <button type="button" class="btn-primary-lg" id="select-files-btn">
-                        <span>Choose Files</span>
-                    </button>
-                </div>
-
-                <!-- Active State -->
-                <div class="active-state" id="active-state" style="display: none;">
-                    <div class="card-toolbar">
-                        <div class="queue-stats">
-                            <span id="queue-count">0 File(s)</span>
-                            <span class="dot-separator"></span>
-                            <span id="queue-size">0.00 MB</span>
-                        </div>
-                        <div class="toolbar-actions">
-                            <button type="button" class="btn-icon-action" id="select-folder-btn" title="Save Directory">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                                </svg>
-                            </button>
-                            <button type="button" class="btn-icon-action" id="add-more-btn" title="Add Files">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                            <button type="button" class="btn-icon-action danger" id="clear-all-btn" title="Clear Queue">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="file-list-wrapper" id="file-list-container"></div>
-
-                    <div class="batch-action-bar">
-                        <div class="global-target">
-                            <label for="global-format-select">Convert All To:</label>
-                            <select class="native-styled-select" id="global-format-select">
-                                <option value="webp">WEBP</option>
-                                <option value="png">PNG</option>
-                                <option value="jpg">JPEG</option>
-                                <option value="pdf">PDF</option>
-                            </select>
-                            <span class="folder-indicator" id="folder-indicator">Save: Default Downloads</span>
-                        </div>
-
-                        <button type="button" class="btn-primary" id="convert-all-btn">
-                            <span>Convert All</span>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="error-banner" id="error-banner"></div>
-        </section>
-
-        <!-- ============================================= -->
-        <!--  SECTION BREAK: Secondary tools label         -->
-        <!-- ============================================= -->
-        <div class="tools-divider">
-            <span>Specialty Tool</span>
-        </div>
-
-        <!-- ============================================= -->
-        <!--  SECONDARY: Image Upscaler                    -->
-        <!-- ============================================= -->
-        <section class="tool-card" id="upscale-section">
-            <div class="tool-header">
-                <div class="tool-icon">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    <span>Convert</span>
+                </button>
+                <button class="tab-btn" data-tab="upscale" role="tab" aria-selected="false">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="15 3 21 3 21 9"></polyline>
                         <polyline points="9 21 3 21 3 15"></polyline>
                         <line x1="21" y1="3" x2="14" y2="10"></line>
                         <line x1="3" y1="21" x2="10" y2="14"></line>
                     </svg>
-                </div>
-                <div class="tool-title-group">
-                    <h2>Image Upscaler</h2>
-                    <p>Increase the resolution of your images to HD, Full HD, 2K, or 4K using high-quality resampling. Perfect for print, wallpaper, or social media.</p>
-                </div>
+                    <span>Upscale</span>
+                </button>
+                <button class="tab-btn" data-tab="enhance" role="tab" aria-selected="false">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/>
+                    </svg>
+                    <span>Enhance</span>
+                </button>
             </div>
 
-            <div class="upscale-container">
-                <!-- Upload Area -->
-                <div class="upscale-upload" id="upscale-upload">
-                    <input type="file" id="upscale-input" accept="image/*" multiple style="display: none;">
-                    <div class="upload-icon-wrapper" style="pointer-events: none;">
-                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <polyline points="9 21 3 21 3 15"></polyline>
-                            <line x1="21" y1="3" x2="14" y2="10"></line>
-                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                        </svg>
-                    </div>
-                    <h3 style="pointer-events: none;">Drop images here, or click to browse</h3>
-                    <p class="upload-hint" id="upscale-filename" style="pointer-events: none; margin-bottom: 0;">
-                        PNG • JPG • WEBP • HEIC • HEIF — Multiple files allowed
-                    </p>
-                </div>
+            <!-- CONVERT PANEL -->
+            <div class="tab-panel active" id="panel-convert" role="tabpanel">
+                <input type="file" id="file-input-hidden" multiple style="display: none;">
 
-                <!-- Settings -->
-                <div class="upscale-controls">
-                    <div class="control-group">
-                        <label for="upscale-res">Target Resolution</label>
-                        <select class="native-styled-select" id="upscale-res">
-                            <option value="720p">HD (720p)</option>
-                            <option value="1080p" selected>Full HD (1080p)</option>
-                            <option value="1440p">2K (1440p)</option>
-                            <option value="2160p">4K (2160p)</option>
-                            <option value="source">Keep Original Size</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="upscale-format">Output Format</label>
-                        <select class="native-styled-select" id="upscale-format">
-                            <option value="png" selected>PNG (Lossless)</option>
-                            <option value="jpg">JPEG (Smaller)</option>
-                            <option value="webp">WEBP (Smallest)</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="upscale-filter">Quality Mode</label>
-                        <select class="native-styled-select" id="upscale-filter">
-                            <option value="lanczos" selected>Best for Photos</option>
-                            <option value="bicubic">Softer / Smoother Look</option>
-                            <option value="bilinear">Fast & Blurry</option>
-                            <option value="nearest">Pixel Art</option>
-                        </select>
-                        <p class="control-hint" id="filter-hint">Sharpest result. Best for photos and general use.</p>
-                    </div>
-                </div>
-
-                <!-- Queue -->
-                <div class="upscale-queue" id="upscale-queue" style="display: none;">
-                    <div class="card-toolbar">
-                        <div class="queue-stats">
-                            <span id="upscale-count">0 File(s)</span>
-                            <span class="dot-separator"></span>
-                            <span id="upscale-size">0.00 MB</span>
-                        </div>
-                        <div class="toolbar-actions">
-                            <button type="button" class="btn-icon-action" id="upscale-add-more" title="Add More Files">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                            </button>
-                            <button type="button" class="btn-icon-action danger" id="upscale-clear-all" title="Clear Queue">
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6"></polyline>
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="file-list-wrapper" id="upscale-list"></div>
-                    <div class="batch-action-bar">
-                        <div class="global-target">
-                            <span class="folder-indicator">3+ files download as a ZIP</span>
-                        </div>
-                        <button type="button" class="btn-primary" id="upscale-all-btn">
-                            <span>Upscale All</span>
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                <div class="drag-canvas-container" id="drag-canvas">
+                    <div class="empty-state" id="empty-state">
+                        <div class="upload-icon-wrapper">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <line x1="5" y1="12" x2="19" y2="12"></line>
-                                <polyline points="12 5 19 12 12 19"></polyline>
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
                             </svg>
+                        </div>
+                        <h3>Drop files here, or click to browse</h3>
+                        <p class="upload-hint">PNG · JPG · WEBP · HEIC · HEIF · PDF &nbsp;•&nbsp; Up to 100 files</p>
+                        <button type="button" class="btn-primary-lg" id="select-files-btn">
+                            <span>Choose Files</span>
                         </button>
                     </div>
+
+                    <div class="active-state" id="active-state" style="display: none;">
+                        <div class="card-toolbar">
+                            <div class="queue-stats">
+                                <span id="queue-count">0 File(s)</span>
+                                <span class="dot-separator"></span>
+                                <span id="queue-size">0.00 MB</span>
+                            </div>
+                            <div class="toolbar-actions">
+                                <button type="button" class="btn-icon-action" id="select-folder-btn" title="Save Directory">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn-icon-action" id="add-more-btn" title="Add Files">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn-icon-action danger" id="clear-all-btn" title="Clear Queue">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="file-list-wrapper" id="file-list-container"></div>
+
+                        <div class="batch-action-bar">
+                            <div class="global-target">
+                                <label for="global-format-select">Convert All To:</label>
+                                <select class="native-styled-select" id="global-format-select">
+                                    <option value="webp">WEBP</option>
+                                    <option value="png">PNG</option>
+                                    <option value="jpg">JPEG</option>
+                                    <option value="pdf">PDF</option>
+                                </select>
+                                <span class="folder-indicator" id="folder-indicator">Save: Default Downloads</span>
+                            </div>
+
+                            <button type="button" class="btn-primary" id="convert-all-btn">
+                                <span>Convert All</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="error-banner" id="error-banner"></div>
+            </div>
+
+            <!-- UPSCALE PANEL -->
+            <div class="tab-panel" id="panel-upscale" role="tabpanel">
+                <div class="upscale-container">
+                    <div class="upscale-upload" id="upscale-upload">
+                        <input type="file" id="upscale-input" accept="image/*" multiple style="display: none;">
+                        <div class="upload-icon-wrapper" style="pointer-events: none;">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="15 3 21 3 21 9"></polyline>
+                                <polyline points="9 21 3 21 3 15"></polyline>
+                                <line x1="21" y1="3" x2="14" y2="10"></line>
+                                <line x1="3" y1="21" x2="10" y2="14"></line>
+                            </svg>
+                        </div>
+                        <h3 style="pointer-events: none;">Drop images here, or click to browse</h3>
+                        <p class="upload-hint" id="upscale-filename" style="pointer-events: none; margin-bottom: 0;">
+                            PNG · JPG · WEBP · HEIC · HEIF &nbsp;•&nbsp; Up to 100 files
+                        </p>
+                    </div>
+
+                    <div class="upscale-controls">
+                        <div class="control-group">
+                            <label for="upscale-res">Target Resolution</label>
+                            <select class="native-styled-select" id="upscale-res">
+                                <option value="720p">HD (720p)</option>
+                                <option value="1080p" selected>Full HD (1080p)</option>
+                                <option value="1440p">2K (1440p)</option>
+                                <option value="2160p">4K (2160p)</option>
+                                <option value="source">Keep Original Size</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="upscale-format">Output Format</label>
+                            <select class="native-styled-select" id="upscale-format">
+                                <option value="png" selected>PNG (Lossless)</option>
+                                <option value="jpg">JPEG (Smaller)</option>
+                                <option value="webp">WEBP (Smallest)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="upscale-filter">Quality Mode</label>
+                            <select class="native-styled-select" id="upscale-filter">
+                                <option value="lanczos" selected>Best for Photos</option>
+                                <option value="bicubic">Softer / Smoother Look</option>
+                                <option value="bilinear">Fast & Blurry</option>
+                                <option value="nearest">Pixel Art</option>
+                            </select>
+                            <p class="control-hint" id="filter-hint">Sharpest result. Best for photos and general use.</p>
+                        </div>
+                    </div>
+
+                    <div class="upscale-queue" id="upscale-queue" style="display: none;">
+                        <div class="card-toolbar">
+                            <div class="queue-stats">
+                                <span id="upscale-count">0 File(s)</span>
+                                <span class="dot-separator"></span>
+                                <span id="upscale-size">0.00 MB</span>
+                            </div>
+                            <div class="toolbar-actions">
+                                <button type="button" class="btn-icon-action" id="upscale-add-more" title="Add More Files">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn-icon-action danger" id="upscale-clear-all" title="Clear Queue">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="file-list-wrapper" id="upscale-list"></div>
+                        <div class="batch-action-bar">
+                            <div class="global-target">
+                                <span class="folder-indicator">3+ files download as a ZIP</span>
+                            </div>
+                            <button type="button" class="btn-primary" id="upscale-all-btn">
+                                <span>Upscale All</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </section>
 
-        <!-- Core Capabilities -->
-        <section class="tools-directory" id="tools-directory">
-            <h2 class="section-title">Core Capabilities</h2>
-            <div class="feature-strip">
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
+            <!-- ENHANCE PANEL -->
+            <div class="tab-panel" id="panel-enhance" role="tabpanel">
+                <div class="upscale-container">
+                    <div class="upscale-upload" id="enhance-upload">
+                        <input type="file" id="enhance-input" accept="image/*" multiple style="display: none;">
+                        <div class="upload-icon-wrapper" style="pointer-events: none;">
+                            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2v20M2 12h20M4.9 4.9l14.2 14.2M19.1 4.9L4.9 19.1"/>
+                            </svg>
+                        </div>
+                        <h3 style="pointer-events: none;">Drop images here, or click to browse</h3>
+                        <p class="upload-hint" id="enhance-filename" style="pointer-events: none; margin-bottom: 0;">
+                            PNG · JPG · WEBP · HEIC · HEIF &nbsp;•&nbsp; Up to 100 files
+                        </p>
                     </div>
-                    <div class="feature-text">
-                        <h3>Format Conversion</h3>
-                        <p>Convert between HEIC, HEIF, PNG, JPG, and WEBP — or turn any image into a PDF instantly.</p>
+
+                    <div class="upscale-controls">
+                        <div class="control-group">
+                            <label for="enhance-mode">Enhancement Mode</label>
+                            <select class="native-styled-select" id="enhance-mode">
+                                <option value="full" selected>Full Enhance (Recommended)</option>
+                                <option value="sharpen">Sharpen Only</option>
+                                <option value="contrast">Contrast Only</option>
+                                <option value="color">Color Boost Only</option>
+                            </select>
+                            <p class="control-hint" id="enhance-hint">Applies sharpening, contrast, and color boost in one pass.</p>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="enhance-format">Output Format</label>
+                            <select class="native-styled-select" id="enhance-format">
+                                <option value="png" selected>PNG (Lossless)</option>
+                                <option value="jpg">JPEG (Smaller)</option>
+                                <option value="webp">WEBP (Smallest)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label>&nbsp;</label>
+                        </div>
                     </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="15 3 21 3 21 9"></polyline>
-                            <polyline points="9 21 3 21 3 15"></polyline>
-                            <line x1="21" y1="3" x2="14" y2="10"></line>
-                            <line x1="3" y1="21" x2="10" y2="14"></line>
-                        </svg>
-                    </div>
-                    <div class="feature-text">
-                        <h3>High-Quality Upscaling</h3>
-                        <p>Increase resolution up to 4K using Lanczos resampling — the sharpest non-AI algorithm available.</p>
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                        </svg>
-                    </div>
-                    <div class="feature-text">
-                        <h3>Batch Processing</h3>
-                        <p>Upload up to 100 files at once. Everything downloads as individual files or a single ZIP.</p>
-                    </div>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                        </svg>
-                    </div>
-                    <div class="feature-text">
-                        <h3>Privacy First</h3>
-                        <p>Files are processed in temporary memory and cleared immediately — never logged or stored.</p>
+
+                    <div class="upscale-queue" id="enhance-queue" style="display: none;">
+                        <div class="card-toolbar">
+                            <div class="queue-stats">
+                                <span id="enhance-count">0 File(s)</span>
+                                <span class="dot-separator"></span>
+                                <span id="enhance-size">0.00 MB</span>
+                            </div>
+                            <div class="toolbar-actions">
+                                <button type="button" class="btn-icon-action" id="enhance-add-more" title="Add More Files">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    </svg>
+                                </button>
+                                <button type="button" class="btn-icon-action danger" id="enhance-clear-all" title="Clear Queue">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="3 6 5 6 21 6"></polyline>
+                                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="file-list-wrapper" id="enhance-list"></div>
+                        <div class="batch-action-bar">
+                            <div class="global-target">
+                                <span class="folder-indicator">3+ files download as a ZIP</span>
+                            </div>
+                            <button type="button" class="btn-primary" id="enhance-all-btn">
+                                <span>Enhance All</span>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- How it Works -->
-        <section class="how-it-works-section" id="how-it-works">
-            <h2 class="section-title">How to Use</h2>
-            <div class="steps-grid">
-                <div class="step-card">
-                    <span class="step-number">1</span>
-                    <h3>Add Your Files</h3>
-                    <p>Drag and drop multiple images into the converter or upscaler zones.</p>
-                </div>
-                <div class="step-card">
-                    <span class="step-number">2</span>
-                    <h3>Choose Settings</h3>
-                    <p>Pick resolution, format, and quality mode — applied to all files in the queue.</p>
-                </div>
-                <div class="step-card">
-                    <span class="step-number">3</span>
-                    <h3>Download</h3>
-                    <p>Click "Convert All" or "Upscale All". 3+ files are bundled into a single ZIP.</p>
-                </div>
+        <!-- Info Row -->
+        <div class="info-row">
+            <div class="info-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <span>Private — files never stored</span>
             </div>
-        </section>
+            <div class="info-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <span>Batch up to 100 files</span>
+            </div>
+            <div class="info-item">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                <span>3+ files bundled as ZIP</span>
+            </div>
+        </div>
 
-        <!-- FAQ Section -->
+        <!-- FAQ -->
         <section class="faq-section" id="faq-section">
-            <h2 class="section-title">Frequently Asked Questions</h2>
+            <h2 class="section-title">FAQ</h2>
             <div class="faq-container">
                 <details class="faq-item">
-                    <summary>What's the difference between the File Converter and Image Upscaler?</summary>
-                    <p>The <strong>File Converter</strong> changes the format (e.g., HEIC to JPG, or images to PDF) without changing the resolution. The <strong>Image Upscaler</strong> increases the resolution (e.g., 1080p to 4K), making images larger and sharper.</p>
+                    <summary>What's the difference between Convert, Upscale, and Enhance?</summary>
+                    <p><strong>Convert</strong> changes format (e.g., HEIC → JPG). <strong>Upscale</strong> increases resolution (e.g., 1080p → 4K). <strong>Enhance</strong> improves visual quality (sharpness, contrast, color) without changing size or format.</p>
                 </details>
                 <details class="faq-item">
                     <summary>Are my files safe?</summary>
-                    <p>Yes. Files exist in temporary operational memory during processing and are immediately cleared once sent back to your browser. No files are logged or saved to server storage.</p>
-                </details>
-                <details class="faq-item">
-                    <summary>Can I process multiple images at once?</summary>
-                    <p>Yes. Both tools support batch uploads up to 100 files. If you have 3 or more files, they will download automatically as a single ZIP package.</p>
+                    <p>Yes. Files exist in temporary memory during processing and are immediately cleared once sent back to your browser. Nothing is logged or saved.</p>
                 </details>
                 <details class="faq-item">
                     <summary>Does upscaling make my images sharper?</summary>
-                    <p>Our upscaler uses Lanczos resampling, the sharpest non-AI algorithm available. It cannot invent new detail that wasn't in the original image, but it produces the cleanest possible result. For AI-based enhancement, a dedicated AI upscaler is required.</p>
+                    <p>Upscaling uses Lanczos resampling — the sharpest non-AI algorithm. It makes images bigger but cannot add new detail that wasn't in the original. To sharpen existing detail, use the <strong>Enhance</strong> tab instead.</p>
                 </details>
             </div>
         </section>
 
         <footer class="app-footer">
-            <p>OmniShift | Universal Media & File Processing Engine</p>
+            <p>OmniShift</p>
         </footer>
     </div>
 
     <script>
         // ============================================
-        // ===  SHARED HELPERS  =======================
+        // ===  TAB SWITCHING  ========================
+        // ============================================
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        const tabPanels  = document.querySelectorAll('.tab-panel');
+
+        tabButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const targetTab = btn.dataset.tab;
+                tabButtons.forEach(b => {
+                    b.classList.toggle('active', b === btn);
+                    b.setAttribute('aria-selected', b === btn);
+                });
+                tabPanels.forEach(p => {
+                    p.classList.toggle('active', p.id === `panel-${targetTab}`);
+                });
+            });
+        });
+
+        // ============================================
+        // ===  HELPERS  ==============================
         // ============================================
         function formatSize(bytes) {
             return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
@@ -394,23 +412,56 @@
                 : filename;
         }
 
+        let savedDirectoryHandle = null;
+
+        function uploadAndGetBlob(endpoint, formData, onProgress, errorLabel) {
+            return new Promise((resolve, reject) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('POST', endpoint, true);
+                xhr.responseType = 'blob';
+
+                xhr.upload.onprogress = (e) => {
+                    if (e.lengthComputable && onProgress) {
+                        onProgress(Math.round((e.loaded / e.total) * 100));
+                    }
+                };
+
+                xhr.onload = async () => {
+                    if (xhr.status === 200) {
+                        resolve(xhr.response);
+                        return;
+                    }
+                    try {
+                        const text = await xhr.response.text();
+                        const json = JSON.parse(text);
+                        reject(new Error(json.error || errorLabel));
+                    } catch (e) {
+                        reject(new Error(errorLabel));
+                    }
+                };
+
+                xhr.onerror = () => reject(new Error('Network error'));
+                xhr.send(formData);
+            });
+        }
+
         // ============================================
-        // ===  UPSCALER LOGIC  =======================
+        // ===  UPSCALER  =============================
         // ============================================
-        const upscaleInput       = document.getElementById('upscale-input');
-        const upscaleUpload      = document.getElementById('upscale-upload');
-        const upscaleFilename    = document.getElementById('upscale-filename');
-        const upscaleQueue       = document.getElementById('upscale-queue');
-        const upscaleList        = document.getElementById('upscale-list');
-        const upscaleCount       = document.getElementById('upscale-count');
-        const upscaleSize        = document.getElementById('upscale-size');
-        const upscaleAddMore     = document.getElementById('upscale-add-more');
-        const upscaleClearAll    = document.getElementById('upscale-clear-all');
-        const upscaleAllBtn      = document.getElementById('upscale-all-btn');
-        const upscaleRes         = document.getElementById('upscale-res');
-        const upscaleFormat      = document.getElementById('upscale-format');
-        const upscaleFilter      = document.getElementById('upscale-filter');
-        const filterHint         = document.getElementById('filter-hint');
+        const upscaleInput    = document.getElementById('upscale-input');
+        const upscaleUpload   = document.getElementById('upscale-upload');
+        const upscaleFilename = document.getElementById('upscale-filename');
+        const upscaleQueue    = document.getElementById('upscale-queue');
+        const upscaleList     = document.getElementById('upscale-list');
+        const upscaleCount    = document.getElementById('upscale-count');
+        const upscaleSize     = document.getElementById('upscale-size');
+        const upscaleAddMore  = document.getElementById('upscale-add-more');
+        const upscaleClearAll = document.getElementById('upscale-clear-all');
+        const upscaleAllBtn   = document.getElementById('upscale-all-btn');
+        const upscaleRes      = document.getElementById('upscale-res');
+        const upscaleFormat   = document.getElementById('upscale-format');
+        const upscaleFilter   = document.getElementById('upscale-filter');
+        const filterHint      = document.getElementById('filter-hint');
 
         const UPSCALE_ALLOWED = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
         const MAX_UPSCALE_FILES = 100;
@@ -458,7 +509,8 @@
                         status: 'Ready',
                         progress: 0,
                         convertedBlob: null,
-                        downloadName: null
+                        downloadName: null,
+                        errorMessage: null
                     });
                 }
             });
@@ -487,37 +539,29 @@
 
         function renderUpscaleList() {
             upscaleList.innerHTML = '';
-
             if (!upscaleStore.length) {
                 upscaleQueue.style.display = 'none';
-                upscaleFilename.textContent = 'PNG • JPG • WEBP • HEIC • HEIF — Multiple files allowed';
+                upscaleFilename.textContent = 'PNG · JPG · WEBP · HEIC · HEIF  •  Up to 100 files';
                 return;
             }
-
             upscaleQueue.style.display = 'block';
 
             let totalBytes = 0;
             upscaleStore.forEach(item => {
                 totalBytes += item.fileObject.size;
-
                 const card = document.createElement('div');
                 card.className = 'file-item-card';
-
                 const iconSvg = `<svg class="item-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
-
                 const downloadBtnHtml = item.convertedBlob
                     ? `<button type="button" class="btn-icon-success" onclick="saveUpscaledFile('${item.id}')" title="Download">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    </button>`
-                    : '';
-
+                    </button>` : '';
                 const statusContent = item.status === 'Upscaling...'
                     ? `<div class="inline-row-progress">
                         <div class="row-progress-bar"><div class="row-progress-fill" style="width: ${item.progress}%"></div></div>
                         <span class="row-progress-text">${item.progress}%</span>
                        </div>`
-                    : `<span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>`;
-
+                    : `<span class="status-pill ${item.status.toLowerCase()}" title="${item.errorMessage || ''}">${item.status}</span>`;
                 card.innerHTML = `
                     <div class="item-left">
                         ${iconSvg}
@@ -545,7 +589,6 @@
         async function saveUpscaledFile(id) {
             const item = upscaleStore.find(i => i.id === id);
             if (!item || !item.convertedBlob) return;
-
             if (savedDirectoryHandle) {
                 try {
                     const fileHandle = await savedDirectoryHandle.getFileHandle(item.downloadName, { create: true });
@@ -555,7 +598,6 @@
                     return;
                 } catch (e) { /* fall through */ }
             }
-
             const url = window.URL.createObjectURL(item.convertedBlob);
             const a = document.createElement('a');
             a.href = url;
@@ -566,7 +608,6 @@
 
         upscaleAllBtn.addEventListener('click', async () => {
             if (!upscaleStore.length) return;
-
             upscaleAllBtn.disabled = true;
             upscaleAllBtn.querySelector('span').textContent = 'Upscaling...';
 
@@ -576,9 +617,9 @@
 
             for (const item of upscaleStore) {
                 if (item.status === 'Done') continue;
-
                 item.status = 'Upscaling...';
                 item.progress = 0;
+                item.errorMessage = null;
                 renderUpscaleList();
 
                 const formData = new FormData();
@@ -588,35 +629,23 @@
                 formData.append('resample', filter);
 
                 try {
-                    const blob = await new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '/upscale-single', true);
-                        xhr.responseType = 'blob';
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                item.progress = Math.round((e.loaded / e.total) * 100);
-                                renderUpscaleList();
-                            }
-                        };
-                        xhr.onload = () => {
-                            if (xhr.status === 200) resolve(xhr.response);
-                            else reject(new Error('Upscale failed'));
-                        };
-                        xhr.onerror = () => reject(new Error('Network error'));
-                        xhr.send(formData);
-                    });
-
+                    const blob = await uploadAndGetBlob(
+                        '/upscale-single', formData,
+                        (pct) => { item.progress = pct; renderUpscaleList(); },
+                        'Upscale failed'
+                    );
                     item.status = 'Done';
                     item.convertedBlob = blob;
                     item.downloadName = `${baseName(item.fileObject.name)}_upscaled.${format}`;
                 } catch (err) {
                     item.status = 'Failed';
+                    item.errorMessage = err.message;
+                    console.error('Upscale failed:', err.message);
                 }
                 renderUpscaleList();
             }
 
             const successful = upscaleStore.filter(i => i.status === 'Done' && i.convertedBlob);
-
             if (successful.length >= 3) {
                 const zip = new JSZip();
                 const folder = zip.folder('Upscaled');
@@ -637,7 +666,225 @@
         });
 
         // ============================================
-        // ===  FILE CONVERTER LOGIC  =================
+        // ===  ENHANCER  =============================
+        // ============================================
+        const enhanceInput    = document.getElementById('enhance-input');
+        const enhanceUpload   = document.getElementById('enhance-upload');
+        const enhanceFilename = document.getElementById('enhance-filename');
+        const enhanceQueue    = document.getElementById('enhance-queue');
+        const enhanceList     = document.getElementById('enhance-list');
+        const enhanceCount    = document.getElementById('enhance-count');
+        const enhanceSize     = document.getElementById('enhance-size');
+        const enhanceAddMore  = document.getElementById('enhance-add-more');
+        const enhanceClearAll = document.getElementById('enhance-clear-all');
+        const enhanceAllBtn   = document.getElementById('enhance-all-btn');
+        const enhanceMode     = document.getElementById('enhance-mode');
+        const enhanceFormat   = document.getElementById('enhance-format');
+        const enhanceHint     = document.getElementById('enhance-hint');
+
+        const ENHANCE_ALLOWED = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif'];
+        const MAX_ENHANCE_FILES = 100;
+        let enhanceStore = [];
+
+        const enhanceHints = {
+            full:     'Applies sharpening, contrast, and color boost in one pass.',
+            sharpen:  'Boosts edge definition. Good for slightly soft photos.',
+            contrast: 'Improves the difference between light and dark areas.',
+            color:    'Increases color richness and saturation.'
+        };
+
+        enhanceMode.addEventListener('change', () => {
+            enhanceHint.textContent = enhanceHints[enhanceMode.value];
+        });
+
+        enhanceUpload.addEventListener('click', () => enhanceInput.click());
+
+        ['dragenter', 'dragover'].forEach(evt => {
+            enhanceUpload.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                enhanceUpload.classList.add('drag-active');
+            });
+        });
+        ['dragleave', 'drop'].forEach(evt => {
+            enhanceUpload.addEventListener(evt, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                enhanceUpload.classList.remove('drag-active');
+            });
+        });
+        enhanceUpload.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.dataTransfer.files.length) addEnhanceFiles(e.dataTransfer.files);
+        });
+
+        enhanceInput.addEventListener('change', () => {
+            if (enhanceInput.files.length) addEnhanceFiles(enhanceInput.files);
+        });
+        enhanceAddMore.addEventListener('click', () => enhanceInput.click());
+
+        function addEnhanceFiles(fileList) {
+            const incoming = Array.from(fileList);
+            if (enhanceStore.length + incoming.length > MAX_ENHANCE_FILES) {
+                alert(`You can only queue up to ${MAX_ENHANCE_FILES} files at a time.`);
+                return;
+            }
+            incoming.forEach(file => {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ENHANCE_ALLOWED.includes(ext)) {
+                    enhanceStore.push({
+                        id: Math.random().toString(36).substring(2, 9),
+                        fileObject: file,
+                        status: 'Ready',
+                        progress: 0,
+                        convertedBlob: null,
+                        downloadName: null,
+                        errorMessage: null
+                    });
+                }
+            });
+            renderEnhanceList();
+        }
+
+        function removeEnhanceFile(id) {
+            enhanceStore = enhanceStore.filter(item => item.id !== id);
+            renderEnhanceList();
+        }
+
+        enhanceClearAll.addEventListener('click', () => {
+            enhanceStore = [];
+            renderEnhanceList();
+        });
+
+        function renderEnhanceList() {
+            enhanceList.innerHTML = '';
+            if (!enhanceStore.length) {
+                enhanceQueue.style.display = 'none';
+                enhanceFilename.textContent = 'PNG · JPG · WEBP · HEIC · HEIF  •  Up to 100 files';
+                return;
+            }
+            enhanceQueue.style.display = 'block';
+
+            let totalBytes = 0;
+            enhanceStore.forEach(item => {
+                totalBytes += item.fileObject.size;
+                const card = document.createElement('div');
+                card.className = 'file-item-card';
+                const iconSvg = `<svg class="item-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>`;
+                const downloadBtnHtml = item.convertedBlob
+                    ? `<button type="button" class="btn-icon-success" onclick="saveEnhancedFile('${item.id}')" title="Download">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    </button>` : '';
+                const statusContent = item.status === 'Enhancing...'
+                    ? `<div class="inline-row-progress">
+                        <div class="row-progress-bar"><div class="row-progress-fill" style="width: ${item.progress}%"></div></div>
+                        <span class="row-progress-text">${item.progress}%</span>
+                       </div>`
+                    : `<span class="status-pill ${item.status.toLowerCase()}" title="${item.errorMessage || ''}">${item.status}</span>`;
+                card.innerHTML = `
+                    <div class="item-left">
+                        ${iconSvg}
+                        <div class="item-details">
+                            <span class="item-name" title="${item.fileObject.name}">${item.fileObject.name}</span>
+                            <span class="item-sizes">${formatSize(item.fileObject.size)}</span>
+                        </div>
+                    </div>
+                    <div class="item-right">
+                        ${statusContent}
+                        ${downloadBtnHtml}
+                        <button type="button" class="btn-icon-danger" onclick="removeEnhanceFile('${item.id}')" title="Remove">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                `;
+                enhanceList.appendChild(card);
+            });
+
+            enhanceCount.textContent = `${enhanceStore.length} File(s)`;
+            enhanceSize.textContent  = formatSize(totalBytes);
+            enhanceFilename.textContent = `${enhanceStore.length} file(s) queued`;
+        }
+
+        async function saveEnhancedFile(id) {
+            const item = enhanceStore.find(i => i.id === id);
+            if (!item || !item.convertedBlob) return;
+            if (savedDirectoryHandle) {
+                try {
+                    const fileHandle = await savedDirectoryHandle.getFileHandle(item.downloadName, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(item.convertedBlob);
+                    await writable.close();
+                    return;
+                } catch (e) { /* fall through */ }
+            }
+            const url = window.URL.createObjectURL(item.convertedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.downloadName;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        enhanceAllBtn.addEventListener('click', async () => {
+            if (!enhanceStore.length) return;
+            enhanceAllBtn.disabled = true;
+            enhanceAllBtn.querySelector('span').textContent = 'Enhancing...';
+
+            const mode   = enhanceMode.value;
+            const format = enhanceFormat.value;
+
+            for (const item of enhanceStore) {
+                if (item.status === 'Done') continue;
+                item.status = 'Enhancing...';
+                item.progress = 0;
+                item.errorMessage = null;
+                renderEnhanceList();
+
+                const formData = new FormData();
+                formData.append('file', item.fileObject);
+                formData.append('target_format', format);
+                formData.append('enhance_mode', mode);
+
+                try {
+                    const blob = await uploadAndGetBlob(
+                        '/enhance-single', formData,
+                        (pct) => { item.progress = pct; renderEnhanceList(); },
+                        'Enhance failed'
+                    );
+                    item.status = 'Done';
+                    item.convertedBlob = blob;
+                    item.downloadName = `${baseName(item.fileObject.name)}_enhanced.${format}`;
+                } catch (err) {
+                    item.status = 'Failed';
+                    item.errorMessage = err.message;
+                    console.error('Enhance failed:', err.message);
+                }
+                renderEnhanceList();
+            }
+
+            const successful = enhanceStore.filter(i => i.status === 'Done' && i.convertedBlob);
+            if (successful.length >= 3) {
+                const zip = new JSZip();
+                const folder = zip.folder('Enhanced');
+                successful.forEach(item => folder.file(item.downloadName, item.convertedBlob));
+                const zipContent = await zip.generateAsync({ type: 'blob' });
+                const url = window.URL.createObjectURL(zipContent);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'Enhanced_Images.zip';
+                a.click();
+                window.URL.revokeObjectURL(url);
+            } else {
+                for (const item of successful) await saveEnhancedFile(item.id);
+            }
+
+            enhanceAllBtn.disabled = false;
+            enhanceAllBtn.querySelector('span').textContent = 'Enhance All';
+        });
+
+        // ============================================
+        // ===  FILE CONVERTER  =======================
         // ============================================
         const fileInputHidden    = document.getElementById('file-input-hidden');
         const dragCanvas         = document.getElementById('drag-canvas');
@@ -658,12 +905,12 @@
         const CONVERT_ALLOWED = ['png', 'jpg', 'jpeg', 'webp', 'heic', 'heif', 'pdf'];
         const MAX_FILES = 100;
         let fileStore = [];
-        let savedDirectoryHandle = null;
 
         ['dragenter', 'dragover'].forEach(evt => {
             window.addEventListener(evt, (e) => {
                 e.preventDefault();
                 if (e.target.closest && e.target.closest('#upscale-upload')) return;
+                if (e.target.closest && e.target.closest('#enhance-upload')) return;
                 dragCanvas.classList.add('canvas-active');
             });
         });
@@ -675,6 +922,7 @@
         });
         window.addEventListener('drop', (e) => {
             if (e.target.closest && e.target.closest('#upscale-upload')) return;
+            if (e.target.closest && e.target.closest('#enhance-upload')) return;
             e.preventDefault();
             if (e.dataTransfer.files.length) appendFiles(e.dataTransfer.files);
         });
@@ -697,7 +945,7 @@
                     }
                 }
             } else {
-                errorBanner.textContent = 'Directory picking is not supported on this browser. Standard downloads will be used.';
+                errorBanner.textContent = 'Directory picking is not supported on this browser.';
                 errorBanner.style.display = 'block';
             }
         });
@@ -719,7 +967,8 @@
                         targetFormat: 'webp',
                         status: 'Ready',
                         progress: 0,
-                        convertedBlob: null
+                        convertedBlob: null,
+                        errorMessage: null
                     });
                 }
             });
@@ -775,10 +1024,8 @@
             let totalBytes = 0;
             fileStore.forEach((item) => {
                 totalBytes += item.fileObject.size;
-
                 const card = document.createElement('div');
                 card.className = 'file-item-card';
-
                 const formatOptions = [
                     { val: 'webp', text: 'WEBP' },
                     { val: 'png',  text: 'PNG' },
@@ -797,7 +1044,7 @@
                         <div class="row-progress-bar"><div class="row-progress-fill" style="width: ${item.progress}%"></div></div>
                         <span class="row-progress-text">${item.progress}%</span>
                        </div>`
-                    : `<span class="status-pill ${item.status.toLowerCase()}">${item.status}</span>`;
+                    : `<span class="status-pill ${item.status.toLowerCase()}" title="${item.errorMessage || ''}">${item.status}</span>`;
 
                 card.innerHTML = `
                     <div class="item-left">
@@ -842,9 +1089,9 @@
             for (let i = 0; i < fileStore.length; i++) {
                 const item = fileStore[i];
                 if (item.status === 'Done') continue;
-
                 item.status = 'Converting...';
                 item.progress = 0;
+                item.errorMessage = null;
                 renderList();
 
                 const formData = new FormData();
@@ -852,29 +1099,18 @@
                 formData.append('target_format', item.targetFormat);
 
                 try {
-                    const blob = await new Promise((resolve, reject) => {
-                        const xhr = new XMLHttpRequest();
-                        xhr.open('POST', '/convert-single', true);
-                        xhr.responseType = 'blob';
-                        xhr.upload.onprogress = (e) => {
-                            if (e.lengthComputable) {
-                                item.progress = Math.round((e.loaded / e.total) * 100);
-                                renderList();
-                            }
-                        };
-                        xhr.onload = () => {
-                            if (xhr.status === 200) resolve(xhr.response);
-                            else reject(new Error('Conversion failed'));
-                        };
-                        xhr.onerror = () => reject(new Error('Network error'));
-                        xhr.send(formData);
-                    });
-
+                    const blob = await uploadAndGetBlob(
+                        '/convert-single', formData,
+                        (pct) => { item.progress = pct; renderList(); },
+                        'Conversion failed'
+                    );
                     item.status = 'Done';
                     item.convertedBlob = blob;
                     item.downloadName = `${baseName(item.fileObject.name)}.${item.targetFormat}`;
                 } catch (err) {
                     item.status = 'Failed';
+                    item.errorMessage = err.message;
+                    console.error('Convert failed:', err.message);
                 }
                 renderList();
             }

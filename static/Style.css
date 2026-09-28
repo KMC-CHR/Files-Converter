@@ -501,20 +501,31 @@ h1, h2, h3, h4 {
 }
 
 .native-styled-select {
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    background-color: var(--bg-surface);
-    border: 1px solid var(--card-border);
-    border-radius: 7px;
-    font-family: var(--font-body);
-    font-size: 0.88rem;
-    color: var(--text-primary);
-    outline: none;
-    cursor: pointer;
+  width: 100%;
+  padding: 0.6rem 2.25rem 0.6rem 0.75rem; /* 2.25rem right padding leaves room for the arrow */
+  background-color: var(--bg-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 7px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+
+  /* Remove default browser arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  /* Custom styled arrow with clean padding from the right border */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center; /* Controls exact spacing from the right edge */
+  background-size: 1rem;
 }
 
 .native-styled-select:focus {
-    border-color: var(--accent-blue);
+  border-color: var(--accent-blue);
 }
 
 /* ============================================

@@ -1,0 +1,1757 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+.github/
+  workflows/
+    keep-alive.yml
+    security.yml
+static/
+  39.jpg
+  favicon.png
+  favicon.svg
+  robots.txt
+  Style.css
+templates/
+  Index.html
+.gitignore
+app.py
+Dockerfile
+requirements.txt
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path=".github/workflows/keep-alive.yml">
+name: Keep Render App Awake
+
+on:
+  schedule:
+    # Runs every 14 minutes. 
+    # Render puts apps to sleep after 15 minutes of inactivity.
+    # GitHub's minimum is 5 minutes, so we use 14 to be safe.
+    - cron: '*/14 * * * *'
+  workflow_dispatch: # Allows you to run it manually from the Actions tab
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Render App Health Endpoint
+        run: |
+          # Replace the URL below with your actual Render URL
+          URL="https://YOUR-RENDER-URL-HERE.onrender.com/healthz"
+          echo "Pinging $URL ..."
+          curl -s -o /dev/null -w "HTTP Status: %{http_code}\nResponse Time: %{time_total}s\n" "$URL"
+</file>
+
+<file path=".github/workflows/security.yml">
+name: CI Security and Quality Scan
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libmagic1 ffmpeg
+
+    - name: Install Python Tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install bandit flake8 safety semgrep
+
+    - name: Code Quality Linting (Flake8)
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Python Security Audit (Bandit)
+      run: |
+        bandit -r . -x ./.venv -ll
+
+    - name: Dependency Vulnerability Check (Safety)
+      run: |
+        safety check || true
+
+    - name: Advanced Static Analysis (Semgrep)
+      run: |
+        semgrep --config p/python --error
+
+    - name: Docker Security Scan (Hadolint)
+      uses: hadolint/hadolint-action@v3.1.0
+      with:
+        dockerfile: Dockerfile
+
+    - name: Build Docker Image
+      run: |
+        docker build -t converter-app .
+
+    - name: Container Image Vulnerability Scan (Trivy)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'converter-app'
+        format: 'table'
+        exit-code: '0'
+        ignore-unfixed: true
+        severity: 'CRITICAL,HIGH'
+</file>
+
+<file path="static/favicon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/>
+    <path d="M21 3v5h-5"/>
+    <path d="M3 12a9 9 0 0 1 9-9"/>
+</svg>
+</file>
+
+<file path="static/robots.txt">
+User-agent: *
+Disallow: /
+</file>
+
+<file path=".gitignore">
+# Python virtual environments
+.venv/
+venv/
+ENV/
+
+# Byte-compiled / Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables & secrets
+.env
+*.env
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# IDE configuration
+.vscode/
+.idea/
+
+# Docker build logs / local test output
+*.log
+/tmp/
+</file>
+
+<file path="requirements.txt">
+APScheduler==3.11.3
+blinker==1.9.0
+click==8.5.0
+Deprecated==1.3.1
+filetype==1.2.0
+Flask==3.1.3
+Flask-Limiter==4.1.1
+gunicorn==23.0.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+limits==5.8.0
+MarkupSafe==3.0.3
+ordered-set==4.1.0
+packaging==26.3
+pillow==12.3.0
+pillow_heif==1.7.0
+python-dotenv==1.0.1
+requests==2.32.3
+typing_extensions==4.16.0
+tzdata==2026.4
+tzlocal==5.4.4
+Werkzeug==3.1.8
+wrapt==2.4.1
+</file>
+
+<file path="Dockerfile">
+FROM python:3.11-slim
+
+# Install system dependencies in one layer as root
+# hadolint ignore=DL3008
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libmagic1 \
+    libheif-dev \
+    liblcms2-dev \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root system user
+RUN groupadd -r appuser && useradd -r -g appuser -s /bin/false appuser
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application assets
+COPY app.py .
+COPY static/ ./static/
+COPY templates/ ./templates/
+
+# Set non-root ownership and switch user
+RUN chown -R appuser:appuser /app
+USER appuser
+
+EXPOSE 5000
+
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "2", "--timeout", "120", "app:app"]
+</file>
+
+<file path="app.py">
+import os
+import io
+import gc
+from flask import Flask, request, send_file, jsonify, render_template
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from PIL import Image, ImageEnhance, ImageFilter
+
+# Optional HEIF support registration
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except Exception as e:
+    print(f"INFO: HEIF opener optional mode active ({e})")
+
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024  # 15MB file size limit
+
+# In-memory IP rate limiter setup
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["200 per day", "50 per hour"],
+    storage_uri="memory://"
+)
+
+def normalize_image(img):
+    """
+    Normalizes image channels to prevent RGB/RGBA/CMYK processing crashes.
+    """
+    if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
+        return img.convert("RGBA")
+    elif img.mode != "RGB":
+        return img.convert("RGB")
+    return img
+
+
+@app.route('/')
+def index():
+    return render_template('Index.html')
+
+
+@app.route('/convert-single', methods=['POST'])
+@limiter.limit("30 per minute")
+def convert_single():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    target_format = request.form.get('target_format', 'png').lower()
+    
+    if not file.filename:
+        return jsonify({'error': 'Empty filename'}), 400
+
+    try:
+        image_bytes = file.read()
+        img = Image.open(io.BytesIO(image_bytes))
+        img = normalize_image(img)
+        output_io = io.BytesIO()
+
+        if target_format in ('jpg', 'jpeg'):
+            if img.mode == 'RGBA':
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])
+                img = background
+            img.save(output_io, format='JPEG', quality=95)
+            mimetype = 'image/jpeg'
+            ext = 'jpg'
+        elif target_format == 'webp':
+            img.save(output_io, format='WEBP', quality=92)
+            mimetype = 'image/webp'
+            ext = 'webp'
+        else:
+            img.save(output_io, format='PNG', optimize=True)
+            mimetype = 'image/png'
+            ext = 'png'
+
+        output_io.seek(0)
+        del image_bytes, img
+        gc.collect()
+
+        return send_file(
+            output_io,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=f"converted_{os.path.splitext(file.filename)[0]}.{ext}"
+        )
+    except Exception as e:
+        gc.collect()
+        return jsonify({'error': f'Image conversion failed: {str(e)}'}), 500
+
+
+@app.route('/upscale-single', methods=['POST'])
+@limiter.limit("20 per minute")
+def upscale_single():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    target_res = request.form.get('target_res', '1080p')
+    target_format = request.form.get('target_format', 'png').lower()
+    resample_mode = request.form.get('resample', 'lanczos').lower()
+
+    res_map = {
+        '720p': 1280,
+        '1080p': 1920,
+        '1440p': 2560,
+        '2160p': 3840
+    }
+    target_width = res_map.get(target_res, 1920)
+
+    filter_map = {
+        'lanczos': Image.Resampling.LANCZOS,
+        'bicubic': Image.Resampling.BICUBIC,
+        'bilinear': Image.Resampling.BILINEAR
+    }
+    resample_filter = filter_map.get(resample_mode, Image.Resampling.LANCZOS)
+
+    try:
+        input_bytes = file.read()
+        img = Image.open(io.BytesIO(input_bytes))
+        img = normalize_image(img)
+
+        # Calculate height keeping original aspect ratio
+        width_percent = (target_width / float(img.size[0]))
+        target_height = int((float(img.size[1]) * float(width_percent)))
+
+        # Resample image
+        img_resized = img.resize((target_width, target_height), resample_filter)
+        
+        # Apply edge sharpness pass
+        img_resized = img_resized.filter(ImageFilter.UnsharpMask(radius=1.2, percent=110, threshold=2))
+
+        output_io = io.BytesIO()
+
+        if target_format in ('jpg', 'jpeg'):
+            if img_resized.mode == 'RGBA':
+                background = Image.new('RGB', img_resized.size, (255, 255, 255))
+                background.paste(img_resized, mask=img_resized.split()[3])
+                img_resized = background
+            img_resized.save(output_io, format='JPEG', quality=95)
+            mimetype = 'image/jpeg'
+            ext = 'jpg'
+        elif target_format == 'webp':
+            img_resized.save(output_io, format='WEBP', quality=92)
+            mimetype = 'image/webp'
+            ext = 'webp'
+        else:
+            img_resized.save(output_io, format='PNG', optimize=True)
+            mimetype = 'image/png'
+            ext = 'png'
+
+        output_io.seek(0)
+        del input_bytes, img, img_resized
+        gc.collect()
+
+        return send_file(
+            output_io,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=f"upscaled_{target_res}_{os.path.splitext(file.filename)[0]}.{ext}"
+        )
+    except Exception as e:
+        gc.collect()
+        return jsonify({'error': f'Upscaling failed: {str(e)}'}), 500
+
+
+@app.route('/enhance-single', methods=['POST'])
+@limiter.limit("20 per minute")
+def enhance_single():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    enhance_mode = request.form.get('enhance_mode', 'full')
+    target_format = request.form.get('target_format', 'png').lower()
+
+    try:
+        input_bytes = file.read()
+        img = Image.open(io.BytesIO(input_bytes))
+        img = normalize_image(img)
+
+        if enhance_mode in ('full', 'sharpen'):
+            img = img.filter(ImageFilter.UnsharpMask(radius=1.8, percent=140, threshold=2))
+
+        if enhance_mode in ('full', 'contrast'):
+            enhancer = ImageEnhance.Contrast(img)
+            img = enhancer.enhance(1.20)
+
+        if enhance_mode in ('full', 'color') and img.mode in ('RGB', 'RGBA'):
+            enhancer = ImageEnhance.Color(img)
+            img = enhancer.enhance(1.15)
+
+        output_io = io.BytesIO()
+
+        if target_format in ('jpg', 'jpeg'):
+            if img.mode == 'RGBA':
+                background = Image.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[3])
+                img = background
+            img.save(output_io, format='JPEG', quality=95)
+            mimetype = 'image/jpeg'
+            ext = 'jpg'
+        elif target_format == 'webp':
+            img.save(output_io, format='WEBP', quality=92)
+            mimetype = 'image/webp'
+            ext = 'webp'
+        else:
+            img.save(output_io, format='PNG', optimize=True)
+            mimetype = 'image/png'
+            ext = 'png'
+
+        output_io.seek(0)
+        del input_bytes, img
+        gc.collect()
+
+        return send_file(
+            output_io,
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=f"enhanced_{os.path.splitext(file.filename)[0]}.{ext}"
+        )
+    except Exception as e:
+        gc.collect()
+        return jsonify({'error': f'Enhancement failed: {str(e)}'}), 500
+
+@app.route('/ai-upscale-single', methods=['POST'])
+@limiter.limit("10 per minute")
+def ai_upscale_single():
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file uploaded'}), 400
+    
+    file = request.files['file']
+    if not file.filename:
+        return jsonify({'error': 'Empty filename'}), 400
+
+    try:
+        input_bytes = file.read()
+        img = Image.open(io.BytesIO(input_bytes))
+        img = normalize_image(img)
+        orig_w, orig_h = img.size
+
+        # 1. Skip median filtering so fine lines aren't smudged away
+        # Direct 4x Lanczos Resampling
+        target_w, target_h = orig_w * 4, orig_h * 4
+        scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+
+        # 2. Targeted Edge Sharpening (Preserves contrast along thin lines)
+        sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=1.5, percent=180, threshold=1))
+
+        output_io = io.BytesIO()
+        sharpened.save(output_io, format='PNG', optimize=True)
+        output_io.seek(0)
+
+        del input_bytes, img, scaled, sharpened
+        gc.collect()
+
+        return send_file(
+            output_io,
+            mimetype='image/png',
+            as_attachment=True,
+            download_name=f"crisp_4x_{os.path.splitext(file.filename)[0]}.png"
+        )
+    except Exception as e:
+        gc.collect()
+        return jsonify({'error': f'Server processing error: {str(e)}'}), 500
+
+if __name__ == '__main__':
+    host = os.environ.get('HOST', '127.0.0.1')
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host=host, port=port, debug=False)
+</file>
+
+<file path="static/Style.css">
+/* ============================================
+   DESIGN SYSTEM & HIERARCHY PROPERTIES
+   ============================================ */
+:root {
+    --bg-main: #f1f5f9;
+    --bg-surface: #ffffff;
+    --bg-subtle: #f8fafc;
+    
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --text-muted: #94a3b8;
+    
+    --accent-blue: #2563eb;
+    --accent-blue-hover: #1d4ed8;
+    --accent-light: #eff6ff;
+    
+    --card-border: #cbd5e1;
+    --border-light: #e2e8f0;
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --shadow-md: 0 6px 16px -2px rgba(15, 23, 42, 0.08);
+
+    --font-heading: 'Satoshi', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-body: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+    --transition-fast: 0.15s ease;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    font-size: 15px;
+    scroll-behavior: smooth;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-weight: 400;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -0.025em;
+}
+
+.workspace-container {
+    width: 100%;
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 2rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* ============================================
+   HEADER & NAVIGATION
+   ============================================ */
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 0.85rem;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.brand-icon {
+    width: 36px;
+    height: 36px;
+    background-color: var(--accent-blue);
+    color: #ffffff;
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.brand-name {
+    font-family: var(--font-heading);
+    font-weight: 900;
+    font-size: 1.3rem;
+    letter-spacing: -0.03em;
+}
+
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+}
+
+.nav-link:hover {
+    color: var(--accent-blue);
+}
+
+/* ============================================
+   TAB CONTAINER & NAVIGATION
+   ============================================ */
+.tab-container {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--card-border);
+    border-radius: 16px;
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.tab-bar {
+    display: flex;
+    align-items: center;
+    background-color: var(--bg-subtle);
+    padding: 0.5rem;
+    gap: 0.4rem;
+    border-bottom: 1px solid var(--border-light);
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.tab-btn {
+    flex: 1;
+    min-width: max-content;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.55rem;
+    padding: 0.7rem 1.25rem;
+    background: transparent;
+    border: none;
+    border-radius: 10px;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+.tab-btn.active {
+    background-color: var(--bg-surface);
+    color: var(--accent-blue);
+    font-weight: 700;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.06);
+}
+
+.tab-panel {
+    display: none;
+    padding: 2rem;
+}
+
+.tab-panel.active {
+    display: block;
+}
+
+/* ============================================
+   DROP ZONES
+   ============================================ */
+.empty-state, .upscale-upload {
+    border: 2px dashed var(--card-border);
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    background-color: var(--bg-subtle);
+    transition: all var(--transition-fast);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+}
+
+.empty-state:hover, .upscale-upload:hover,
+.empty-state.drag-active, .upscale-upload.drag-active {
+    border-color: var(--accent-blue);
+    background-color: var(--accent-light);
+    transform: translateY(-1px);
+}
+
+.upload-icon-wrapper {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background-color: var(--accent-light);
+    color: var(--accent-blue);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 0.25rem;
+}
+
+.upload-title {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text-primary);
+}
+
+.upload-hint {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.btn-primary-lg {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.65rem 1.75rem;
+    background-color: var(--accent-blue);
+    color: #ffffff;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.88rem;
+    border: none;
+    border-radius: 9px;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    transition: all var(--transition-fast);
+}
+
+.btn-primary-lg:hover {
+    background-color: var(--accent-blue-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+/* ============================================
+   FREECONVERT-STYLE FILE QUEUE & CONTROL UI
+   ============================================ */
+.queue-container {
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    background-color: var(--bg-surface);
+    overflow: hidden;
+}
+
+.queue-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    background-color: var(--bg-subtle);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.queue-summary {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.queue-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    background-color: var(--bg-surface);
+    color: var(--text-secondary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-icon:hover {
+    color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    background-color: var(--accent-light);
+}
+
+.global-tab-settings {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    background-color: var(--bg-subtle);
+    border-bottom: 1px solid var(--border-light);
+}
+
+.file-list-items {
+    display: flex;
+    flex-direction: column;
+}
+
+.file-queue-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border-light);
+    gap: 1rem;
+}
+
+.file-queue-item:last-child {
+    border-bottom: none;
+}
+
+.file-item-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.file-icon {
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+
+.file-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 280px;
+}
+
+.file-size {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.file-item-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+}
+
+.badge-ready {
+    background-color: #f1f5f9;
+    color: var(--text-secondary);
+}
+
+.badge-busy {
+    background-color: #fef3c7;
+    color: #d97706;
+}
+
+.badge-error {
+    background-color: #fee2e2;
+    color: #dc2626;
+}
+
+.btn-download-sm {
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0.35rem 0.85rem;
+    background-color: #10b981;
+    color: #ffffff;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background-color var(--transition-fast);
+}
+
+.btn-download-sm:hover {
+    background-color: #059669;
+}
+
+.btn-remove-item {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: color var(--transition-fast);
+}
+
+.btn-remove-item:hover {
+    color: #dc2626;
+}
+
+.queue-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    background-color: var(--bg-subtle);
+    border-top: 1px solid var(--border-light);
+}
+
+.batch-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.batch-label {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.select-compact {
+    width: auto;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.82rem;
+}
+
+.ai-batch-note {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+}
+
+.btn-primary-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    background-color: var(--accent-blue);
+    color: #ffffff;
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.88rem;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    transition: all var(--transition-fast);
+}
+
+.btn-primary-action:hover:not(:disabled) {
+    background-color: var(--accent-blue-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+.btn-primary-action:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ============================================
+   INPUT FORM CONTROLS
+   ============================================ */
+.control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.control-group label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.native-styled-select {
+  width: 100%;
+  padding: 0.6rem 2.25rem 0.6rem 0.75rem; /* 2.25rem right padding leaves room for the arrow */
+  background-color: var(--bg-surface);
+  border: 1px solid var(--card-border);
+  border-radius: 7px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  outline: none;
+  cursor: pointer;
+
+  /* Remove default browser arrow */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  /* Custom styled arrow with clean padding from the right border */
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center; /* Controls exact spacing from the right edge */
+  background-size: 1rem;
+}
+
+.native-styled-select:focus {
+  border-color: var(--accent-blue);
+}
+
+/* ============================================
+   SECONDARY INFO & FAQ
+   ============================================ */
+.info-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding: 0.85rem 1.25rem;
+    background-color: transparent;
+    border: none;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.info-item [data-lucide] {
+    color: var(--accent-blue);
+    flex-shrink: 0;
+}
+
+.faq-section {
+    padding-top: 0.5rem;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    margin-bottom: 0.85rem;
+}
+
+.faq-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.faq-item {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-light);
+    border-radius: 8px;
+    padding: 0.85rem 1.1rem;
+}
+
+.faq-item summary {
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--text-primary);
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.faq-item summary::-webkit-details-marker {
+    display: none;
+}
+
+.faq-item summary::after {
+    content: "+";
+    font-size: 1.1rem;
+    color: var(--text-muted);
+}
+
+.faq-item[open] summary::after {
+    content: "−";
+}
+
+.faq-item p {
+    margin-top: 0.55rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+.app-footer {
+    text-align: center;
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    padding: 1.25rem 0 0.5rem 0;
+}
+
+[data-lucide] {
+    width: 1.15rem;
+    height: 1.15rem;
+    stroke-width: 2.25px;
+    vertical-align: middle;
+}
+
+.brand-icon [data-lucide] {
+    width: 1.25rem;
+    height: 1.25rem;
+    stroke-width: 2.5px;
+}
+
+.upload-icon-wrapper [data-lucide] {
+    width: 1.6rem;
+    height: 1.6rem;
+    stroke-width: 2px;
+}
+
+@media (max-width: 768px) {
+    .workspace-container {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .info-row {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .global-tab-settings {
+        grid-template-columns: 1fr;
+    }
+
+    .file-name {
+        max-width: 150px;
+    }
+
+    .queue-footer {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .btn-primary-action {
+        justify-content: center;
+    }
+
+    .badge-success {
+    background-color: #d1fae5;
+    color: #047857;
+}
+}
+</file>
+
+<file path="templates/Index.html">
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OmniShift — Free Online Image Converter, Upscaler & AI Enhancer</title>
+    
+    <!-- Satoshi & Poppins Fonts -->
+    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,800,900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+</head>
+<body>
+
+    <div class="workspace-container">
+        
+        <!-- Header -->
+        <header class="app-header">
+            <a href="/" class="brand-link">
+                <div class="brand-icon">
+                    <i data-lucide="layers"></i>
+                </div>
+                <span class="brand-name">OmniShift</span>
+            </a>
+            <nav class="nav-menu">
+                <a href="#faq" class="nav-link">
+                    <i data-lucide="help-circle"></i>
+                    <span>FAQ</span>
+                </a>
+            </nav>
+        </header>
+
+        <!-- Main Tab Workspace -->
+        <main class="tab-container">
+            
+            <!-- Tab Navigation Bar -->
+            <div class="tab-bar">
+                <button class="tab-btn active" onclick="switchTab('convert', event)">
+                    <i data-lucide="repeat"></i>
+                    <span>Convert</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('upscale', event)">
+                    <i data-lucide="scaling"></i>
+                    <span>Standard Upscale</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('ai-upscale', event)">
+                    <i data-lucide="sparkles"></i>
+                    <span>AI Super-Res</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('enhance', event)">
+                    <i data-lucide="sliders"></i>
+                    <span>Enhance</span>
+                </button>
+            </div>
+
+            <!-- TAB 1: CONVERT PANEL -->
+            <div id="panel-convert" class="tab-panel active">
+                <div class="empty-state" id="drop-zone-convert" onclick="document.getElementById('file-input-convert').click()">
+                    <div class="upload-icon-wrapper"><i data-lucide="file-up"></i></div>
+                    <h3 class="upload-title">Drop files here, or click to browse</h3>
+                    <p class="upload-hint">PNG, JPG, WEBP, HEIC, HEIF, PDF • Up to 15MB per file</p>
+                    <button class="btn-primary-lg" type="button">Choose Files</button>
+                    <input type="file" id="file-input-convert" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'convert')">
+                </div>
+
+                <div id="queue-container-convert" class="queue-container" style="display: none;">
+                    <div class="queue-header">
+                        <span id="queue-summary-convert" class="queue-summary">0 File(s) • 0.00 MB</span>
+                        <div class="queue-header-actions">
+                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-convert-more').click()"><i data-lucide="plus"></i></button>
+                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('convert')"><i data-lucide="trash-2"></i></button>
+                            <input type="file" id="file-input-convert-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'convert')">
+                        </div>
+                    </div>
+                    <div id="file-list-convert" class="file-list-items"></div>
+                    <div class="queue-footer">
+                        <div class="batch-controls">
+                            <span class="batch-label">Convert All To:</span>
+                            <select id="batch-format-convert" class="native-styled-select select-compact" onchange="updateAllFormats('convert', this.value)">
+                                <option value="webp" selected>WEBP</option>
+                                <option value="png">PNG</option>
+                                <option value="jpg">JPG</option>
+                            </select>
+                        </div>
+                        <button id="btn-process-convert" class="btn-primary-action" onclick="processBatch('convert')">
+                            <span>Convert All</span><i data-lucide="arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: STANDARD UPSCALE PANEL -->
+            <div id="panel-upscale" class="tab-panel">
+                <div class="empty-state" id="drop-zone-upscale" onclick="document.getElementById('file-input-upscale').click()">
+                    <div class="upload-icon-wrapper"><i data-lucide="maximize-2"></i></div>
+                    <h3 class="upload-title">Drop files here for Standard Upscaling</h3>
+                    <p class="upload-hint">Fast mathematical Lanczos pixel resampling</p>
+                    <button class="btn-primary-lg" type="button">Choose Files</button>
+                    <input type="file" id="file-input-upscale" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'upscale')">
+                </div>
+
+                <div id="queue-container-upscale" class="queue-container" style="display: none;">
+                    <div class="queue-header">
+                        <span id="queue-summary-upscale" class="queue-summary">0 File(s) • 0.00 MB</span>
+                        <div class="queue-header-actions">
+                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-upscale-more').click()"><i data-lucide="plus"></i></button>
+                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('upscale')"><i data-lucide="trash-2"></i></button>
+                            <input type="file" id="file-input-upscale-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'upscale')">
+                        </div>
+                    </div>
+                    
+                    <div class="global-tab-settings">
+                        <div class="control-group">
+                            <label for="target-res">Target Resolution</label>
+                            <select id="target-res" class="native-styled-select">
+                                <option value="720p">720p (HD)</option>
+                                <option value="1080p" selected>1080p (Full HD)</option>
+                                <option value="1440p">1440p (2K)</option>
+                                <option value="2160p">2160p (4K)</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="resample-filter">Algorithm</label>
+                            <select id="resample-filter" class="native-styled-select">
+                                <option value="lanczos" selected>Lanczos (Sharp)</option>
+                                <option value="bicubic">Bicubic (Smooth)</option>
+                                <option value="bilinear">Bilinear (Fast)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="file-list-upscale" class="file-list-items"></div>
+                    <div class="queue-footer">
+                        <div class="batch-controls">
+                            <span class="batch-label">Output Format:</span>
+                            <select id="batch-format-upscale" class="native-styled-select select-compact" onchange="updateAllFormats('upscale', this.value)">
+                                <option value="png" selected>PNG</option>
+                                <option value="jpg">JPG</option>
+                                <option value="webp">WEBP</option>
+                            </select>
+                        </div>
+                        <button id="btn-process-upscale" class="btn-primary-action" onclick="processBatch('upscale')">
+                            <span>Upscale All</span><i data-lucide="arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: AI SUPER-RESOLUTION PANEL -->
+            <div id="panel-ai-upscale" class="tab-panel">
+                <div class="empty-state" id="drop-zone-ai-upscale" onclick="document.getElementById('file-input-ai-upscale').click()">
+                    <div class="upload-icon-wrapper"><i data-lucide="sparkles"></i></div>
+                    <h3 class="upload-title">Drop files here for AI Super-Resolution</h3>
+                    <p class="upload-hint">Reconstructs missing details & keeps transparent edges sharp</p>
+                    <button class="btn-primary-lg" type="button">Choose Files</button>
+                    <input type="file" id="file-input-ai-upscale" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'ai-upscale')">
+                </div>
+
+                <div id="queue-container-ai-upscale" class="queue-container" style="display: none;">
+                    <div class="queue-header">
+                        <span id="queue-summary-ai-upscale" class="queue-summary">0 File(s) • 0.00 MB</span>
+                        <div class="queue-header-actions">
+                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-ai-more').click()"><i data-lucide="plus"></i></button>
+                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('ai-upscale')"><i data-lucide="trash-2"></i></button>
+                            <input type="file" id="file-input-ai-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'ai-upscale')">
+                        </div>
+                    </div>
+                    <div id="file-list-ai-upscale" class="file-list-items"></div>
+                    <div class="queue-footer">
+                        <span class="ai-batch-note">Batch items are processed sequentially to avoid GPU rate limits</span>
+                        <button id="btn-process-ai-upscale" class="btn-primary-action" onclick="processBatch('ai-upscale')">
+                            <span>Process AI Queue</span><i data-lucide="arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 4: ENHANCE PANEL -->
+            <div id="panel-enhance" class="tab-panel">
+                <div class="empty-state" id="drop-zone-enhance" onclick="document.getElementById('file-input-enhance').click()">
+                    <div class="upload-icon-wrapper"><i data-lucide="image-plus"></i></div>
+                    <h3 class="upload-title">Drop files here to Enhance</h3>
+                    <p class="upload-hint">Applies unsharp edge sharpening, contrast tuning, and color vibrance</p>
+                    <button class="btn-primary-lg" type="button">Choose Files</button>
+                    <input type="file" id="file-input-enhance" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'enhance')">
+                </div>
+
+                <div id="queue-container-enhance" class="queue-container" style="display: none;">
+                    <div class="queue-header">
+                        <span id="queue-summary-enhance" class="queue-summary">0 File(s) • 0.00 MB</span>
+                        <div class="queue-header-actions">
+                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-enhance-more').click()"><i data-lucide="plus"></i></button>
+                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('enhance')"><i data-lucide="trash-2"></i></button>
+                            <input type="file" id="file-input-enhance-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'enhance')">
+                        </div>
+                    </div>
+
+                    <div class="global-tab-settings">
+                        <div class="control-group">
+                            <label for="enhance-mode">Enhancement Preset</label>
+                            <select id="enhance-mode" class="native-styled-select">
+                                <option value="full" selected>Full (Sharpen + Contrast + Color)</option>
+                                <option value="sharpen">Sharpen Edges Only</option>
+                                <option value="contrast">Boost Contrast</option>
+                                <option value="color">Enhance Color Vibrance</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="file-list-enhance" class="file-list-items"></div>
+                    <div class="queue-footer">
+                        <div class="batch-controls">
+                            <span class="batch-label">Output Format:</span>
+                            <select id="batch-format-enhance" class="native-styled-select select-compact" onchange="updateAllFormats('enhance', this.value)">
+                                <option value="png" selected>PNG</option>
+                                <option value="jpg">JPG</option>
+                                <option value="webp">WEBP</option>
+                            </select>
+                        </div>
+                        <button id="btn-process-enhance" class="btn-primary-action" onclick="processBatch('enhance')">
+                            <span>Enhance All</span><i data-lucide="arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Secondary Information Bar -->
+        <section class="info-row">
+            <div class="info-item">
+                <i data-lucide="shield-check"></i>
+                <span>Private & Secure — Files processed directly in memory</span>
+            </div>
+            <div class="info-item">
+                <i data-lucide="trash-2"></i>
+                <span>Zero Storage — Memory cleaned instantly after download</span>
+            </div>
+            <div class="info-item">
+                <i data-lucide="zap"></i>
+                <span>Free AI Super-Resolution — Powered by Hugging Face</span>
+            </div>
+        </section>
+
+        <!-- FAQ Section -->
+        <section class="faq-section" id="faq">
+            <h2 class="section-title">Frequently Asked Questions</h2>
+            <div class="faq-container">
+                <details class="faq-item">
+                    <summary>What is the difference between Standard Upscaling and AI Super-Resolution?</summary>
+                    <p><strong>Standard Upscaling</strong> uses mathematical algorithms (such as Lanczos or Bicubic) to quickly interpolate and enlarge pixels. <strong>AI Super-Resolution</strong> uses a deep learning neural network hosted on serverless GPUs to intelligently reconstruct missing textures, crisp linework, and fine visual details without pixelation.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>How does AI Super-Resolution handle PNG images with transparency?</summary>
+                    <p>Our backend normalizes transparent channels (RGBA) prior to passing processing data to the AI model. For transparent PNG files, background masks and alpha channels are preserved clean so your transparent cutouts remain sharp and usable.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>Why does the first AI request take longer to finish?</summary>
+                    <p>The AI model runs on Hugging Face's serverless GPU infrastructure. If the inference model is idle when you send a request, it takes 5 to 10 seconds to wake up and load into GPU memory before processing your file.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>Are my uploaded images stored or logged on your servers?</summary>
+                    <p>No. Every file uploaded for conversion, standard upscaling, enhancement, or AI processing is handled strictly in-memory (RAM) and streamed back to your browser. Garbage collection clears memory buffers immediately after each request.</p>
+                </details>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <p>&copy; 2026 OmniShift. Built with Flask, Pillow & Hugging Face.</p>
+        </footer>
+
+    </div>
+
+   <script>
+    lucide.createIcons();
+
+    // Strict batch limits per mode to prevent memory overflow and API blocks
+    const BATCH_LIMITS = {
+        'convert': 10,
+        'upscale': 5,
+        'ai-upscale': 3,
+        'enhance': 5
+    };
+
+    const queues = {
+        'convert': [],
+        'upscale': [],
+        'ai-upscale': [],
+        'enhance': []
+    };
+
+    function switchTab(tabName, evt) {
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+
+        if (evt && evt.currentTarget) {
+            evt.currentTarget.classList.add('active');
+        }
+        document.getElementById('panel-' + tabName).classList.add('active');
+    }
+
+    // Prevent default browser drag-over behavior
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        window.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+        }, false);
+    });
+
+    function setupDropZone(dropZoneId, inputId, mode) {
+        const zone = document.getElementById(dropZoneId);
+        if (!zone) return;
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            zone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add('drag-active');
+            }, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            zone.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove('drag-active');
+            }, false);
+        });
+
+        zone.addEventListener('drop', (e) => {
+            const dt = e.dataTransfer;
+            if (dt && dt.files && dt.files.length > 0) {
+                addFilesToQueue(dt.files, mode);
+            }
+        }, false);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        setupDropZone('drop-zone-convert', 'file-input-convert', 'convert');
+        setupDropZone('drop-zone-upscale', 'file-input-upscale', 'upscale');
+        setupDropZone('drop-zone-ai-upscale', 'file-input-ai-upscale', 'ai-upscale');
+        setupDropZone('drop-zone-enhance', 'file-input-enhance', 'enhance');
+    });
+
+    function addFilesToQueue(files, mode) {
+        if (!files || files.length === 0) return;
+
+        const maxLimit = BATCH_LIMITS[mode] || 5;
+        const currentCount = queues[mode].length;
+        const remainingSlots = maxLimit - currentCount;
+
+        if (remainingSlots <= 0) {
+            alert(`Queue limit reached. Maximum ${maxLimit} files allowed at once for ${mode}.`);
+            return;
+        }
+
+        let defaultFormat = 'png';
+        const batchSelect = document.getElementById(`batch-format-${mode}`);
+        if (batchSelect) defaultFormat = batchSelect.value;
+
+        // Add files up to allowed remaining slots
+        const filesToAdd = Array.from(files).slice(0, remainingSlots);
+        if (files.length > remainingSlots) {
+            alert(`Added ${remainingSlots} file(s). Exceeded maximum batch limit of ${maxLimit} files for this tab.`);
+        }
+
+        for (let file of filesToAdd) {
+            queues[mode].push({
+                id: Math.random().toString(36).substring(2, 9),
+                file: file,
+                format: defaultFormat,
+                status: 'Ready'
+            });
+        }
+
+        renderQueueUI(mode);
+    }
+
+    function removeQueueItem(mode, id) {
+        queues[mode] = queues[mode].filter(item => item.id !== id);
+        renderQueueUI(mode);
+    }
+
+    function clearQueue(mode) {
+        queues[mode] = [];
+        renderQueueUI(mode);
+    }
+
+    function updateItemFormat(mode, id, format) {
+        const item = queues[mode].find(i => i.id === id);
+        if (item) item.format = format;
+    }
+
+    function updateAllFormats(mode, format) {
+        queues[mode].forEach(item => item.format = format);
+        renderQueueUI(mode);
+    }
+
+    function renderQueueUI(mode) {
+        const emptyZone = document.getElementById(`drop-zone-${mode}`);
+        const queueContainer = document.getElementById(`queue-container-${mode}`);
+        const itemsList = document.getElementById(`file-list-${mode}`);
+        const summaryText = document.getElementById(`queue-summary-${mode}`);
+        const maxLimit = BATCH_LIMITS[mode] || 5;
+
+        if (queues[mode].length === 0) {
+            emptyZone.style.display = 'flex';
+            queueContainer.style.display = 'none';
+            return;
+        }
+
+        emptyZone.style.display = 'none';
+        queueContainer.style.display = 'block';
+
+        let totalBytes = queues[mode].reduce((acc, curr) => acc + curr.file.size, 0);
+        let totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+        summaryText.textContent = `${queues[mode].length}/${maxLimit} File(s) • ${totalMB} MB`;
+
+        itemsList.innerHTML = '';
+
+        queues[mode].forEach(item => {
+            const mbSize = (item.file.size / (1024 * 1024)).toFixed(2);
+            const itemEl = document.createElement('div');
+            itemEl.className = 'file-queue-item';
+
+            let actionBadge = '';
+            if (item.status === 'Ready') {
+                actionBadge = `<span class="badge badge-ready">Ready</span>`;
+            } else if (item.status === 'Processing') {
+                actionBadge = `<span class="badge badge-busy">Processing...</span>`;
+            } else if (item.status === 'Done') {
+                actionBadge = `<span class="badge badge-success">Downloaded</span>`;
+            } else {
+                actionBadge = `<span class="badge badge-error">Failed</span>`;
+            }
+
+            const hideFormatSelector = mode === 'ai-upscale';
+
+            itemEl.innerHTML = `
+                <div class="file-item-left">
+                    <i data-lucide="image" class="file-icon"></i>
+                    <div class="file-info">
+                        <span class="file-name" title="${item.file.name}">${item.file.name}</span>
+                        <span class="file-size">${mbSize} MB</span>
+                    </div>
+                </div>
+                <div class="file-item-right">
+                    ${actionBadge}
+                    ${!hideFormatSelector ? `
+                    <select class="native-styled-select select-compact" onchange="updateItemFormat('${mode}', '${item.id}', this.value)" ${item.status === 'Processing' ? 'disabled' : ''}>
+                        <option value="png" ${item.format === 'png' ? 'selected' : ''}>PNG</option>
+                        <option value="jpg" ${item.format === 'jpg' ? 'selected' : ''}>JPG</option>
+                        <option value="webp" ${item.format === 'webp' ? 'selected' : ''}>WEBP</option>
+                    </select>
+                    ` : ''}
+                    <button class="btn-remove-item" onclick="removeQueueItem('${mode}', '${item.id}')">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            `;
+            itemsList.appendChild(itemEl);
+        });
+
+        lucide.createIcons();
+    }
+
+    // Triggers immediate browser download without manual clicks
+    function triggerAutoDownload(blob, filename) {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        setTimeout(() => {
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        }, 1000);
+    }
+
+    // Batch process with auto-downloading upon completion
+    async function processBatch(mode, retryCount = 0) {
+        const btn = document.getElementById(`btn-process-${mode}`);
+        if (btn) btn.disabled = true;
+
+        for (let item of queues[mode]) {
+            if (item.status === 'Done') continue;
+
+            item.status = 'Processing';
+            renderQueueUI(mode);
+
+            const formData = new FormData();
+            formData.append('file', item.file);
+
+            let endpoint = '/convert-single';
+            if (mode === 'upscale') {
+                endpoint = '/upscale-single';
+                formData.append('target_res', document.getElementById('target-res').value);
+                formData.append('target_format', item.format);
+                formData.append('resample', document.getElementById('resample-filter').value);
+            } else if (mode === 'ai-upscale') {
+                endpoint = '/ai-upscale-single';
+            } else if (mode === 'enhance') {
+                endpoint = '/enhance-single';
+                formData.append('enhance_mode', document.getElementById('enhance-mode').value);
+                formData.append('target_format', item.format);
+            } else {
+                formData.append('target_format', item.format);
+            }
+
+            try {
+                const response = await fetch(endpoint, { method: 'POST', body: formData });
+
+                if (response.status === 503 && retryCount < 3) {
+                    await new Promise(res => setTimeout(res, 4000));
+                    return processBatch(mode, retryCount + 1);
+                }
+
+                if (!response.ok) throw new Error('Processing failed');
+
+                const blob = await response.blob();
+                const outputName = `${mode}_${osFilenameWithoutExt(item.file.name)}.${mode === 'ai-upscale' ? 'png' : item.format}`;
+                
+                // Automatically download immediately
+                triggerAutoDownload(blob, outputName);
+                
+                item.status = 'Done';
+            } catch (err) {
+                item.status = 'Error';
+            }
+            renderQueueUI(mode);
+        }
+
+        if (btn) btn.disabled = false;
+    }
+
+    function osFilenameWithoutExt(filename) {
+        return filename.substring(0, filename.lastIndexOf('.')) || filename;
+    }
+</script>
+</body>
+</html>
+</file>
+
+</files>

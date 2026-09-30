@@ -11,12 +11,16 @@ try:
     import pillow_heif
     pillow_heif.register_heif_opener()
 except Exception as e:
+    # Handles optional loading gracefully if library is missing
     print(f"INFO: HEIF opener optional mode active ({e})")
 
 app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024  # 15MB file size limit
 
-# In-memory IP rate limiter setup
+# Enforce strict 15MB upload limit to prevent memory exhaustion attacks
+app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024  
+
+# Configure rate limiter using client IP to prevent service abuse
+# Flask-Limiter is actively maintained; check PyPI for release updates
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -24,9 +28,10 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+
 def normalize_image(img):
     """
-    Normalizes image channels to prevent RGB/RGBA/CMYK processing crashes.
+    Normalizes image color spaces to prevent processing crashes across formats.
     """
     if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
         return img.convert("RGBA")
@@ -35,14 +40,28 @@ def normalize_image(img):
     return img
 
 
+@app.route('/healthz', methods=['GET'])
+def health_check():
+    """
+    Exposes an HTTP health check endpoint for monitoring tools like UptimeRobot.
+    """
+    return jsonify({'status': 'ok'}), 200
+
+
 @app.route('/')
 def index():
+    """
+    Renders the main single-page UI template.
+    """
     return render_template('Index.html')
 
 
 @app.route('/convert-single', methods=['POST'])
 @limiter.limit("30 per minute")
 def convert_single():
+    """
+    Converts individual image uploads between PNG, JPG, and WEBP formats.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -93,6 +112,9 @@ def convert_single():
 @app.route('/upscale-single', methods=['POST'])
 @limiter.limit("20 per minute")
 def upscale_single():
+    """
+    Resizes images using standard mathematical interpolation filters.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -121,14 +143,12 @@ def upscale_single():
         img = Image.open(io.BytesIO(input_bytes))
         img = normalize_image(img)
 
-        # Calculate height keeping original aspect ratio
+        # Calculate target height while maintaining original ratio
         width_percent = (target_width / float(img.size[0]))
         target_height = int((float(img.size[1]) * float(width_percent)))
 
-        # Resample image
+        # Resample image and sharpen
         img_resized = img.resize((target_width, target_height), resample_filter)
-        
-        # Apply edge sharpness pass
         img_resized = img_resized.filter(ImageFilter.UnsharpMask(radius=1.2, percent=110, threshold=2))
 
         output_io = io.BytesIO()
@@ -168,6 +188,9 @@ def upscale_single():
 @app.route('/enhance-single', methods=['POST'])
 @limiter.limit("20 per minute")
 def enhance_single():
+    """
+    Applies image sharpening, contrast adjustments, or color vibrance passes.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -224,9 +247,13 @@ def enhance_single():
         gc.collect()
         return jsonify({'error': f'Enhancement failed: {str(e)}'}), 500
 
+
 @app.route('/ai-upscale-single', methods=['POST'])
 @limiter.limit("10 per minute")
 def ai_upscale_single():
+    """
+    Performs 4x image upscaling using high-fidelity Lanczos resampling and edge sharpening.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -240,12 +267,11 @@ def ai_upscale_single():
         img = normalize_image(img)
         orig_w, orig_h = img.size
 
-        # 1. Skip median filtering so fine lines aren't smudged away
-        # Direct 4x Lanczos Resampling
+        # Scale image size by 4x using Lanczos algorithm
         target_w, target_h = orig_w * 4, orig_h * 4
         scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
 
-        # 2. Targeted Edge Sharpening (Preserves contrast along thin lines)
+        # Apply unsharp mask filter to sharpen output edges
         sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=1.5, percent=180, threshold=1))
 
         output_io = io.BytesIO()
@@ -264,6 +290,7 @@ def ai_upscale_single():
     except Exception as e:
         gc.collect()
         return jsonify({'error': f'Server processing error: {str(e)}'}), 500
+
 
 if __name__ == '__main__':
     host = os.environ.get('HOST', '127.0.0.1')

@@ -1,14 +1,15 @@
 import os
 import io
 import gc
+import time
+import requests
 from flask import Flask, request, send_file, jsonify, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image, ImageEnhance, ImageFilter
-from huggingface_hub import InferenceClient
 from dotenv import load_dotenv
 
-# Load local .env variables if available
+# Load local .env variables if present
 load_dotenv()
 
 # Optional HEIF support registration
@@ -33,9 +34,6 @@ limiter = Limiter(
 
 # Pull token from environment (supports either HF_TOKEN or HUGGINGFACE_API_KEY)
 HF_API_KEY = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
-
-# Initialize Hugging Face client
-hf_client = InferenceClient(api_key=HF_API_KEY) if HF_API_KEY else None
 
 
 def normalize_image(img):
@@ -245,7 +243,8 @@ def enhance_single():
 @limiter.limit("10 per minute")
 def ai_upscale_single():
     """
-    Performs AI Super Resolution via Hugging Face Inference API.
+    Performs AI Super Resolution via the updated Hugging Face Router API.
+    Handles cold-start delays by retrying if the model is loading.
     """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -254,36 +253,48 @@ def ai_upscale_single():
     if not file.filename:
         return jsonify({'error': 'Empty filename'}), 400
 
-    if not hf_client:
+    if not HF_API_KEY:
         return jsonify({'error': 'Server environment missing HUGGINGFACE_API_KEY or HF_TOKEN variable.'}), 500
 
     try:
         input_bytes = file.read()
+        headers = {
+            "Authorization": f"Bearer {HF_API_KEY}",
+            "Accept": "image/png"
+        }
 
-        # Call Hugging Face AI Model via InferenceClient
-        result_bytes = hf_client.image_to_image(
-            image=input_bytes,
-            model="ai-forever/Real-ESRGAN"
-        )
+        # Updated Hugging Face Serverless Inference Router Endpoint
+        model_url = "https://router.huggingface.co/hf-inference/models/caidas/swin2SR-classical-sr-x2-64"
 
-        output_io = io.BytesIO(result_bytes)
-        output_io.seek(0)
+        # Retry loop to handle cold starts (HTTP 503 model loading)
+        max_retries = 3
+        for attempt in range(max_retries):
+            response = requests.post(model_url, headers=headers, data=input_bytes, timeout=45)
 
-        del input_bytes
+            if response.status_code == 503 and attempt < max_retries - 1:
+                time.sleep(8)
+                continue
+            
+            if response.status_code == 200:
+                output_io = io.BytesIO(response.content)
+                output_io.seek(0)
+                del input_bytes
+                gc.collect()
+
+                return send_file(
+                    output_io,
+                    mimetype='image/png',
+                    as_attachment=True,
+                    download_name=f"ai_upscaled_{os.path.splitext(file.filename)[0]}.png"
+                )
+            else:
+                return jsonify({
+                    'error': f'Hugging Face API returned HTTP {response.status_code}: {response.text}'
+                }), 502
+
+    except requests.exceptions.Timeout:
         gc.collect()
-
-        return send_file(
-            output_io,
-            mimetype='image/png',
-            as_attachment=True,
-            download_name=f"ai_upscaled_{os.path.splitext(file.filename)[0]}.png"
-        )
+        return jsonify({'error': 'AI processing request timed out. The model took too long to respond.'}), 504
     except Exception as e:
         gc.collect()
-        return jsonify({'error': f'Hugging Face AI processing error: {str(e)}'}), 500
-
-
-if __name__ == '__main__':
-    host = os.environ.get('HOST', '127.0.0.1')
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host=host, port=port, debug=False)
+        return jsonify({'error': f'Server processing error: {str(e)}'}), 500

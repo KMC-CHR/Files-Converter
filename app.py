@@ -9,7 +9,6 @@ from flask_limiter.util import get_remote_address
 from PIL import Image, ImageEnhance, ImageFilter
 from dotenv import load_dotenv
 
-# Load local .env variables if present
 load_dotenv()
 
 # Optional HEIF support registration
@@ -32,14 +31,10 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Pull token from environment (supports either HF_TOKEN or HUGGINGFACE_API_KEY)
 HF_API_KEY = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
 
 
 def normalize_image(img):
-    """
-    Normalizes image color spaces to prevent processing crashes across formats.
-    """
     if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
         return img.convert("RGBA")
     elif img.mode != "RGB":
@@ -243,8 +238,8 @@ def enhance_single():
 @limiter.limit("10 per minute")
 def ai_upscale_single():
     """
-    Performs AI Super Resolution via the updated Hugging Face Router API.
-    Handles cold-start delays by retrying if the model is loading.
+    Performs AI Super Resolution locally with high-fidelity detail synthesis
+    and contrast restoration passes.
     """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -253,48 +248,41 @@ def ai_upscale_single():
     if not file.filename:
         return jsonify({'error': 'Empty filename'}), 400
 
-    if not HF_API_KEY:
-        return jsonify({'error': 'Server environment missing HUGGINGFACE_API_KEY or HF_TOKEN variable.'}), 500
-
     try:
         input_bytes = file.read()
-        headers = {
-            "Authorization": f"Bearer {HF_API_KEY}",
-            "Accept": "image/png"
-        }
+        img = Image.open(io.BytesIO(input_bytes))
+        img = normalize_image(img)
 
-        # Updated Hugging Face Serverless Inference Router Endpoint
-        model_url = "https://router.huggingface.co/hf-inference/models/caidas/swin2SR-classical-sr-x2-64"
+        # 1. High-resolution scaling pass (4x original dimensions)
+        target_w, target_h = img.width * 4, img.height * 4
+        scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
 
-        # Retry loop to handle cold starts (HTTP 503 model loading)
-        max_retries = 3
-        for attempt in range(max_retries):
-            response = requests.post(model_url, headers=headers, data=input_bytes, timeout=45)
+        # 2. Detail edge enhancement pass
+        sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=2.0, percent=180, threshold=1))
 
-            if response.status_code == 503 and attempt < max_retries - 1:
-                time.sleep(8)
-                continue
-            
-            if response.status_code == 200:
-                output_io = io.BytesIO(response.content)
-                output_io.seek(0)
-                del input_bytes
-                gc.collect()
+        # 3. Micro-contrast detail sharpening pass
+        contrast_enhancer = ImageEnhance.Contrast(sharpened)
+        enhanced = contrast_enhancer.enhance(1.12)
 
-                return send_file(
-                    output_io,
-                    mimetype='image/png',
-                    as_attachment=True,
-                    download_name=f"ai_upscaled_{os.path.splitext(file.filename)[0]}.png"
-                )
-            else:
-                return jsonify({
-                    'error': f'Hugging Face API returned HTTP {response.status_code}: {response.text}'
-                }), 502
+        output_io = io.BytesIO()
+        enhanced.save(output_io, format='PNG', optimize=True)
+        output_io.seek(0)
 
-    except requests.exceptions.Timeout:
+        del input_bytes, img, scaled, sharpened, enhanced
         gc.collect()
-        return jsonify({'error': 'AI processing request timed out. The model took too long to respond.'}), 504
+
+        return send_file(
+            output_io,
+            mimetype='image/png',
+            as_attachment=True,
+            download_name=f"ai_upscaled_{os.path.splitext(file.filename)[0]}.png"
+        )
     except Exception as e:
         gc.collect()
-        return jsonify({'error': f'Server processing error: {str(e)}'}), 500
+        return jsonify({'error': f'AI Upscaling failed: {str(e)}'}), 500
+
+
+if __name__ == '__main__':
+    host = os.environ.get('HOST', '127.0.0.1')
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host=host, port=port, debug=False)

@@ -41,10 +41,34 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Load ONNX Neural Network Model globally on startup
+# Auto-download lightweight ONNX weights on boot if missing
 ONNX_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'realesrgan.onnx')
-ort_session = None
+MODEL_URL = "https://huggingface.co/qualcomm/RealESRGAN/resolve/main/RealESRGAN.onnx"
 
+def ensure_onnx_model():
+    """
+    Auto-downloads the compressed ONNX model binary on startup if missing.
+    Prevents bloated Git repositories while guaranteeing local AI execution.
+    """
+    if not os.path.exists(ONNX_MODEL_PATH):
+        print("INFO: Local ONNX model binary not found. Auto-downloading weights...")
+        try:
+            response = requests.get(MODEL_URL, stream=True, timeout=60)
+            if response.status_code == 200:
+                with open(ONNX_MODEL_PATH, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                print("SUCCESS: ONNX model binary downloaded successfully.")
+            else:
+                print(f"WARNING: Model download failed with HTTP status {response.status_code}")
+        except Exception as err:
+            print(f"WARNING: Could not auto-download ONNX model: {err}")
+
+if HAS_ONNX:
+    ensure_onnx_model()
+
+# Initialize ONNX Neural Network Session globally on startup
+ort_session = None
 if HAS_ONNX and os.path.exists(ONNX_MODEL_PATH):
     try:
         # Initialize ONNX CPU execution provider (~120MB RAM footprint)
@@ -260,6 +284,10 @@ def enhance_single():
 @app.route('/ai-upscale-single', methods=['POST'])
 @limiter.limit("10 per minute")
 def ai_upscale_single():
+    """
+    Performs True AI Super Resolution locally using ONNX Neural Network inference on CPU.
+    Includes RAM safety caps and aggressive garbage collection for Render Free Tier.
+    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -272,25 +300,28 @@ def ai_upscale_single():
         img = Image.open(io.BytesIO(input_bytes))
         img = normalize_image(img)
 
-        # Cap max dimensions to 600px prior to tensor conversion to guarantee 512MB RAM compliance
-        max_tensor_dim = 600
-        if max(img.width, img.height) > max_tensor_dim:
-            img.thumbnail((max_tensor_dim, max_tensor_dim), Image.Resampling.LANCZOS)
-
+        # 1. Execute Local ONNX Neural Network Super-Resolution
         if ort_session is not None and HAS_ONNX:
+            # Memory safety: cap oversized input images to avoid exceeding Render RAM limits (512MB)
+            max_input_dim = 600
+            if max(img.width, img.height) > max_input_dim:
+                img.thumbnail((max_input_dim, max_input_dim), Image.Resampling.LANCZOS)
+
             img_rgb = img.convert("RGB")
             img_np = np.array(img_rgb, dtype=np.float32) / 255.0
+            
+            # Convert image structure from HWC -> CHW -> NCHW
             input_tensor = np.transpose(img_np, (2, 0, 1))[np.newaxis, :, :, :]
-
             del img_np, img_rgb
             gc.collect()
 
+            # Run inference pass through the model
             input_name = ort_session.get_inputs()[0].name
             output_tensor = ort_session.run(None, {input_name: input_tensor})[0]
-
             del input_tensor
             gc.collect()
 
+            # Reconstruct tensor to image: NCHW -> HWC
             output_np = np.squeeze(output_tensor, axis=0)
             output_np = np.transpose(output_np, (1, 2, 0))
             output_np = np.clip(output_np * 255.0, 0, 255).astype(np.uint8)
@@ -298,13 +329,12 @@ def ai_upscale_single():
             output_img = Image.fromarray(output_np)
             del output_tensor, output_np
             gc.collect()
+
+        # 2. Clean high-fidelity fallback if ONNX model binary failed to download
         else:
-            # Fallback path if ONNX file is not present in repo
             target_w, target_h = img.width * 2, img.height * 2
-            scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-            sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=1.8, percent=140, threshold=1))
-            contrast_enhancer = ImageEnhance.Contrast(sharpened)
-            output_img = contrast_enhancer.enhance(1.10)
+            output_img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            output_img = output_img.filter(ImageFilter.UnsharpMask(radius=0.8, percent=40, threshold=3))
 
         output_io = io.BytesIO()
         output_img.save(output_io, format='PNG', optimize=True)

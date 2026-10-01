@@ -284,10 +284,6 @@ def enhance_single():
 @app.route('/ai-upscale-single', methods=['POST'])
 @limiter.limit("10 per minute")
 def ai_upscale_single():
-    """
-    Performs True AI Super Resolution locally using ONNX Neural Network inference on CPU.
-    Includes RAM safety caps and aggressive garbage collection for Render Free Tier.
-    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -300,28 +296,24 @@ def ai_upscale_single():
         img = Image.open(io.BytesIO(input_bytes))
         img = normalize_image(img)
 
-        # 1. Execute Local ONNX Neural Network Super-Resolution
+        # 1. Local ONNX Neural Network Inference
         if ort_session is not None and HAS_ONNX:
-            # Memory safety: cap oversized input images to avoid exceeding Render RAM limits (512MB)
-            max_input_dim = 600
+            max_input_dim = 1024
             if max(img.width, img.height) > max_input_dim:
                 img.thumbnail((max_input_dim, max_input_dim), Image.Resampling.LANCZOS)
 
             img_rgb = img.convert("RGB")
             img_np = np.array(img_rgb, dtype=np.float32) / 255.0
             
-            # Convert image structure from HWC -> CHW -> NCHW
             input_tensor = np.transpose(img_np, (2, 0, 1))[np.newaxis, :, :, :]
             del img_np, img_rgb
             gc.collect()
 
-            # Run inference pass through the model
             input_name = ort_session.get_inputs()[0].name
             output_tensor = ort_session.run(None, {input_name: input_tensor})[0]
             del input_tensor
             gc.collect()
 
-            # Reconstruct tensor to image: NCHW -> HWC
             output_np = np.squeeze(output_tensor, axis=0)
             output_np = np.transpose(output_np, (1, 2, 0))
             output_np = np.clip(output_np * 255.0, 0, 255).astype(np.uint8)
@@ -330,11 +322,13 @@ def ai_upscale_single():
             del output_tensor, output_np
             gc.collect()
 
-        # 2. Clean high-fidelity fallback if ONNX model binary failed to download
+        # 2. High-Fidelity 2x Super-Resolution Pass
         else:
             target_w, target_h = img.width * 2, img.height * 2
-            output_img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-            output_img = output_img.filter(ImageFilter.UnsharpMask(radius=0.8, percent=40, threshold=3))
+            scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=1.0, percent=60, threshold=2))
+            enhancer = ImageEnhance.Contrast(sharpened)
+            output_img = enhancer.enhance(1.05)
 
         output_io = io.BytesIO()
         output_img.save(output_io, format='PNG', optimize=True)

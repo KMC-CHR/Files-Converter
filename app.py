@@ -5,28 +5,37 @@ from flask import Flask, request, send_file, jsonify, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from PIL import Image, ImageEnhance, ImageFilter
+from huggingface_hub import InferenceClient
+from dotenv import load_dotenv
+
+# Load local .env variables if available
+load_dotenv()
 
 # Optional HEIF support registration
 try:
     import pillow_heif
     pillow_heif.register_heif_opener()
 except Exception as e:
-    # Handles optional loading gracefully if library is missing
     print(f"INFO: HEIF opener optional mode active ({e})")
 
 app = Flask(__name__)
 
-# Enforce strict 15MB upload limit to prevent memory exhaustion attacks
+# Enforce strict 15MB upload limit
 app.config['MAX_CONTENT_LENGTH'] = 15 * 1024 * 1024  
 
-# Configure rate limiter using client IP to prevent service abuse
-# Flask-Limiter is actively maintained; check PyPI for release updates
+# Configure rate limiter using client IP
 limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://"
 )
+
+# Pull token from environment (supports either HF_TOKEN or HUGGINGFACE_API_KEY)
+HF_API_KEY = os.environ.get("HF_TOKEN") or os.environ.get("HUGGINGFACE_API_KEY")
+
+# Initialize Hugging Face client
+hf_client = InferenceClient(api_key=HF_API_KEY) if HF_API_KEY else None
 
 
 def normalize_image(img):
@@ -41,25 +50,19 @@ def normalize_image(img):
 
 
 @app.route('/healthz', methods=['GET'])
-@limiter.limit("20 per minute")  # Allows UptimeRobot (1 per 5 mins) & GitHub Actions, but blocks floods
+@limiter.limit("20 per minute")
 def health_check():
     return jsonify({'status': 'ok'}), 200
 
 
 @app.route('/')
 def index():
-    """
-    Renders the main single-page UI template.
-    """
     return render_template('Index.html')
 
 
 @app.route('/convert-single', methods=['POST'])
 @limiter.limit("30 per minute")
 def convert_single():
-    """
-    Converts individual image uploads between PNG, JPG, and WEBP formats.
-    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -110,9 +113,6 @@ def convert_single():
 @app.route('/upscale-single', methods=['POST'])
 @limiter.limit("20 per minute")
 def upscale_single():
-    """
-    Resizes images using standard mathematical interpolation filters.
-    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -141,11 +141,9 @@ def upscale_single():
         img = Image.open(io.BytesIO(input_bytes))
         img = normalize_image(img)
 
-        # Calculate target height while maintaining original ratio
         width_percent = (target_width / float(img.size[0]))
         target_height = int((float(img.size[1]) * float(width_percent)))
 
-        # Resample image and sharpen
         img_resized = img.resize((target_width, target_height), resample_filter)
         img_resized = img_resized.filter(ImageFilter.UnsharpMask(radius=1.2, percent=110, threshold=2))
 
@@ -186,9 +184,6 @@ def upscale_single():
 @app.route('/enhance-single', methods=['POST'])
 @limiter.limit("20 per minute")
 def enhance_single():
-    """
-    Applies image sharpening, contrast adjustments, or color vibrance passes.
-    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -250,7 +245,7 @@ def enhance_single():
 @limiter.limit("10 per minute")
 def ai_upscale_single():
     """
-    Performs 4x image upscaling using high-fidelity Lanczos resampling and edge sharpening.
+    Performs AI Super Resolution via Hugging Face Inference API.
     """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -259,35 +254,33 @@ def ai_upscale_single():
     if not file.filename:
         return jsonify({'error': 'Empty filename'}), 400
 
+    if not hf_client:
+        return jsonify({'error': 'Server environment missing HUGGINGFACE_API_KEY or HF_TOKEN variable.'}), 500
+
     try:
         input_bytes = file.read()
-        img = Image.open(io.BytesIO(input_bytes))
-        img = normalize_image(img)
-        orig_w, orig_h = img.size
 
-        # Scale image size by 4x using Lanczos algorithm
-        target_w, target_h = orig_w * 4, orig_h * 4
-        scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+        # Call Hugging Face AI Model via InferenceClient
+        result_bytes = hf_client.image_to_image(
+            image=input_bytes,
+            model="ai-forever/Real-ESRGAN"
+        )
 
-        # Apply unsharp mask filter to sharpen output edges
-        sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=1.5, percent=180, threshold=1))
-
-        output_io = io.BytesIO()
-        sharpened.save(output_io, format='PNG', optimize=True)
+        output_io = io.BytesIO(result_bytes)
         output_io.seek(0)
 
-        del input_bytes, img, scaled, sharpened
+        del input_bytes
         gc.collect()
 
         return send_file(
             output_io,
             mimetype='image/png',
             as_attachment=True,
-            download_name=f"crisp_4x_{os.path.splitext(file.filename)[0]}.png"
+            download_name=f"ai_upscaled_{os.path.splitext(file.filename)[0]}.png"
         )
     except Exception as e:
         gc.collect()
-        return jsonify({'error': f'Server processing error: {str(e)}'}), 500
+        return jsonify({'error': f'Hugging Face AI processing error: {str(e)}'}), 500
 
 
 if __name__ == '__main__':

@@ -41,10 +41,8 @@ def normalize_image(img):
 
 
 @app.route('/healthz', methods=['GET'])
+@limiter.limit("20 per minute")  # Allows UptimeRobot (1 per 5 mins) & GitHub Actions, but blocks floods
 def health_check():
-    """
-    Exposes an HTTP health check endpoint for monitoring tools like UptimeRobot.
-    """
     return jsonify({'status': 'ok'}), 200
 
 

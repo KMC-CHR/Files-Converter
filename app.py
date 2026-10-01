@@ -260,10 +260,6 @@ def enhance_single():
 @app.route('/ai-upscale-single', methods=['POST'])
 @limiter.limit("10 per minute")
 def ai_upscale_single():
-    """
-    Performs Super Resolution locally using ONNX Neural Network inference.
-    Falls back to high-fidelity multi-pass scaling if ONNX model is absent.
-    """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
     
@@ -276,37 +272,39 @@ def ai_upscale_single():
         img = Image.open(io.BytesIO(input_bytes))
         img = normalize_image(img)
 
-        # 1. Execute Local ONNX Neural Network Super-Resolution
-        if ort_session is not None and HAS_ONNX:
-            # Memory safety: cap oversized input images to avoid exceeding Render RAM limits
-            max_input_dim = 1024
-            if max(img.width, img.height) > max_input_dim:
-                img.thumbnail((max_input_dim, max_input_dim), Image.Resampling.LANCZOS)
+        # Cap max dimensions to 600px prior to tensor conversion to guarantee 512MB RAM compliance
+        max_tensor_dim = 600
+        if max(img.width, img.height) > max_tensor_dim:
+            img.thumbnail((max_tensor_dim, max_tensor_dim), Image.Resampling.LANCZOS)
 
+        if ort_session is not None and HAS_ONNX:
             img_rgb = img.convert("RGB")
-            img_np = np.array(img_rgb).astype(np.float32) / 255.0
-            
-            # Convert image structure from HWC -> CHW -> NCHW
+            img_np = np.array(img_rgb, dtype=np.float32) / 255.0
             input_tensor = np.transpose(img_np, (2, 0, 1))[np.newaxis, :, :, :]
 
-            # Run inference pass through the model
+            del img_np, img_rgb
+            gc.collect()
+
             input_name = ort_session.get_inputs()[0].name
             output_tensor = ort_session.run(None, {input_name: input_tensor})[0]
 
-            # Reconstruct tensor to image: NCHW -> HWC
+            del input_tensor
+            gc.collect()
+
             output_np = np.squeeze(output_tensor, axis=0)
             output_np = np.transpose(output_np, (1, 2, 0))
             output_np = np.clip(output_np * 255.0, 0, 255).astype(np.uint8)
 
             output_img = Image.fromarray(output_np)
-
-        # 2. High-fidelity multi-pass fallback if model binary is missing
+            del output_tensor, output_np
+            gc.collect()
         else:
-            target_w, target_h = img.width * 4, img.height * 4
+            # Fallback path if ONNX file is not present in repo
+            target_w, target_h = img.width * 2, img.height * 2
             scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-            sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=2.0, percent=180, threshold=1))
+            sharpened = scaled.filter(ImageFilter.UnsharpMask(radius=1.8, percent=140, threshold=1))
             contrast_enhancer = ImageEnhance.Contrast(sharpened)
-            output_img = contrast_enhancer.enhance(1.12)
+            output_img = contrast_enhancer.enhance(1.10)
 
         output_io = io.BytesIO()
         output_img.save(output_io, format='PNG', optimize=True)

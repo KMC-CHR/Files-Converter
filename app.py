@@ -1,8 +1,9 @@
 import os
 import io
 import gc
-import math
 import requests
+import cv2
+import numpy as np
 from flask import Flask, request, send_file, jsonify, render_template
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -19,15 +20,6 @@ try:
 except Exception as e:
     print(f"INFO: HEIF opener optional mode active ({e})")
 
-# Import ONNX Runtime and NumPy for local AI inference
-try:
-    import numpy as np
-    import onnxruntime as ort
-    HAS_ONNX = True
-except ImportError:
-    HAS_ONNX = False
-    print("INFO: onnxruntime/numpy not installed. Local AI route will use multi-pass fallback.")
-
 app = Flask(__name__)
 
 # Enforce strict 15MB upload limit
@@ -41,118 +33,44 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Auto-download lightweight ONNX weights on boot if missing
-ONNX_MODEL_PATH = os.path.join(os.path.dirname(__file__), 'realesrgan.onnx')
-MODEL_URL = "https://huggingface.co/qualcomm/RealESRGAN/resolve/main/RealESRGAN.onnx"
+# Auto-download lightweight LapSRN AI Model (1.1 MB) for local CPU inference
+MODEL_PATH = os.path.join(os.path.dirname(__file__), 'LapSRN_x2.pb')
+MODEL_URL = "https://raw.githubusercontent.com/fannymonori/TF-LapSRN/master/export/LapSRN_x2.pb"
 
-def ensure_onnx_model():
-    """
-    Auto-downloads the compressed ONNX model binary on startup if missing.
-    Prevents bloated Git repositories while guaranteeing local AI execution.
-    """
-    if not os.path.exists(ONNX_MODEL_PATH):
-        print("INFO: Local ONNX model binary not found. Auto-downloading weights...")
+sr = None
+
+def init_local_ai():
+    global sr
+    if not os.path.exists(MODEL_PATH):
+        print("INFO: Local LapSRN AI model not found. Auto-downloading (1.1 MB)...")
         try:
-            response = requests.get(MODEL_URL, stream=True, timeout=60)
-            if response.status_code == 200:
-                with open(ONNX_MODEL_PATH, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                print("SUCCESS: ONNX model binary downloaded successfully.")
-            else:
-                print(f"WARNING: Model download failed with HTTP status {response.status_code}")
+            res = requests.get(MODEL_URL, timeout=30)
+            if res.status_code == 200:
+                with open(MODEL_PATH, 'wb') as f:
+                    f.write(res.content)
+                print("SUCCESS: Local LapSRN model downloaded.")
+        except Exception as e:
+            print(f"WARNING: Could not download LapSRN model: {e}")
+
+    if os.path.exists(MODEL_PATH):
+        try:
+            sr = cv2.dnn_superres.DnnSuperResImpl_create()
+            sr.readModel(MODEL_PATH)
+            sr.setModel("lapsrn", 2)
+            print("SUCCESS: OpenCV Local CPU AI Super-Resolution Model Loaded!")
         except Exception as err:
-            print(f"WARNING: Could not auto-download ONNX model: {err}")
+            print(f"WARNING: Failed to initialize OpenCV SuperRes model: {err}")
+            sr = None
 
-if HAS_ONNX:
-    ensure_onnx_model()
-
-# Initialize ONNX Neural Network Session globally on startup
-ort_session = None
-if HAS_ONNX and os.path.exists(ONNX_MODEL_PATH):
-    try:
-        ort_session = ort.InferenceSession(ONNX_MODEL_PATH, providers=['CPUExecutionProvider'])
-        print("SUCCESS: Local Real-ESRGAN ONNX AI Model initialized successfully.")
-    except Exception as err:
-        print(f"WARNING: Failed to load ONNX model session: {err}")
+init_local_ai()
 
 
 def normalize_image(img):
-    """
-    Normalizes image color modes across formats to prevent processing exceptions.
-    """
     if img.mode in ("RGBA", "LA") or (img.mode == "P" and "transparency" in img.info):
         return img.convert("RGBA")
     elif img.mode != "RGB":
         return img.convert("RGB")
     return img
-
-
-def process_image_tiles(img, tile_size=128, tile_pad=16, scale=2):
-    """
-    Slices input image into overlapping tiles, runs each tile through ONNX,
-    and stitches output together without seams or memory spikes.
-    """
-    img_rgb = img.convert("RGB")
-    w, h = img_rgb.size
-    
-    # Calculate output canvas dimensions
-    out_w, out_h = w * scale, h * scale
-    output_np = np.zeros((out_h, out_w, 3), dtype=np.uint8)
-
-    input_name = ort_session.get_inputs()[0].name
-    img_np = np.array(img_rgb)
-
-    # Grid tile calculation
-    tiles_x = math.ceil(w / tile_size)
-    tiles_y = math.ceil(h / tile_size)
-
-    for y in range(tiles_y):
-        for x in range(tiles_x):
-            # Calculate input coordinates with padding
-            ofs_x, ofs_y = x * tile_size, y * tile_size
-            
-            x1 = max(ofs_x - tile_pad, 0)
-            y1 = max(ofs_y - tile_pad, 0)
-            x2 = min(ofs_x + tile_size + tile_pad, w)
-            y2 = min(ofs_y + tile_size + tile_pad, h)
-
-            # Crop tile array
-            tile = img_np[y1:y2, x1:x2, :]
-            
-            # Format to float32 tensor [1, 3, H, W]
-            tile_float = tile.astype(np.float32) / 255.0
-            input_tensor = np.transpose(tile_float, (2, 0, 1))[np.newaxis, :, :, :]
-
-            # Execute ONNX tile pass
-            try:
-                output_tensor = ort_session.run(None, {input_name: input_tensor})[0]
-                tile_out = np.squeeze(output_tensor, axis=0)
-                tile_out = np.transpose(tile_out, (1, 2, 0))
-                tile_out = np.clip(tile_out * 255.0, 0, 255).astype(np.uint8)
-            except Exception:
-                # Fallback tile resizing if tensor shape mismatch occurs on chunk
-                tile_pil = Image.fromarray(tile)
-                tile_out = np.array(tile_pil.resize((tile.shape[1] * scale, tile.shape[0] * scale), Image.Resampling.LANCZOS))
-
-            # Strip padding for seamless stitching
-            rx1 = (ofs_x - x1) * scale
-            ry1 = (ofs_y - y1) * scale
-            rx2 = rx1 + min(tile_size, w - ofs_x) * scale
-            ry2 = ry1 + min(tile_size, h - ofs_y) * scale
-
-            tile_cropped = tile_out[ry1:ry2, rx1:rx2, :]
-
-            # Paste into output composite canvas
-            out_x1, out_y1 = ofs_x * scale, ofs_y * scale
-            out_x2, out_y2 = out_x1 + tile_cropped.shape[1], out_y1 + tile_cropped.shape[0]
-            
-            output_np[out_y1:out_y2, out_x1:out_x2, :] = tile_cropped
-
-            del input_tensor, tile_out
-            gc.collect()
-
-    return Image.fromarray(output_np)
 
 
 @app.route('/healthz', methods=['GET'])
@@ -227,12 +145,7 @@ def upscale_single():
     target_format = request.form.get('target_format', 'png').lower()
     resample_mode = request.form.get('resample', 'lanczos').lower()
 
-    res_map = {
-        '720p': 1280,
-        '1080p': 1920,
-        '1440p': 2560,
-        '2160p': 3840
-    }
+    res_map = {'720p': 1280, '1080p': 1920, '1440p': 2560, '2160p': 3840}
     target_width = res_map.get(target_res, 1920)
 
     filter_map = {
@@ -351,8 +264,8 @@ def enhance_single():
 @limiter.limit("10 per minute")
 def ai_upscale_single():
     """
-    Executes Tile-Based ONNX AI Super Resolution locally on CPU.
-    Slices image into 128x128 padded chunks to maintain RAM under 80MB.
+    Executes Local LapSRN AI Super Resolution natively on CPU using OpenCV DNN.
+    Accepts arbitrary image dimensions without shape errors or RAM crashes.
     """
     if 'file' not in request.files:
         return jsonify({'error': 'No file uploaded'}), 400
@@ -363,23 +276,35 @@ def ai_upscale_single():
 
     try:
         input_bytes = file.read()
-        img = Image.open(io.BytesIO(input_bytes))
-        img = normalize_image(img)
+        pil_img = Image.open(io.BytesIO(input_bytes))
+        pil_img = normalize_image(pil_img)
 
-        # 1. Execute Tile-Based ONNX Inference Pass
-        if ort_session is not None and HAS_ONNX:
-            output_img = process_image_tiles(img, tile_size=128, tile_pad=16, scale=2)
-        # 2. Multi-Pass Fallback Route
+        # Execute 100% Local AI Model if loaded
+        if sr is not None:
+            # Convert PIL RGB -> OpenCV BGR
+            cv_img = cv2.cvtColor(np.array(pil_img), cv2.COLOR_RGB2BGR)
+            
+            # Run local CPU super resolution pass
+            upscaled_cv = sr.upsample(cv_img)
+            
+            # Convert OpenCV BGR -> PIL RGB
+            upscaled_rgb = cv2.cvtColor(upscaled_cv, cv2.COLOR_BGR2RGB)
+            output_img = Image.fromarray(upscaled_rgb)
+
+            del cv_img, upscaled_cv, upscaled_rgb
+            gc.collect()
+
+        # Multi-Pass Fallback
         else:
-            target_w, target_h = img.width * 2, img.height * 2
-            scaled = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
-            output_img = scaled.filter(ImageFilter.UnsharpMask(radius=1.0, percent=60, threshold=2))
+            target_w, target_h = pil_img.width * 2, pil_img.height * 2
+            scaled = pil_img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+            output_img = scaled.filter(ImageFilter.UnsharpMask(radius=1.2, percent=80, threshold=2))
 
         output_io = io.BytesIO()
         output_img.save(output_io, format='PNG', optimize=True)
         output_io.seek(0)
 
-        del input_bytes, img
+        del input_bytes, pil_img
         gc.collect()
 
         return send_file(

@@ -235,19 +235,21 @@
 
             <!-- TAB 5: LINK DOWNLOADER PANEL (MP4 / MP3) -->
             <div id="panel-video-download" class="tab-panel">
-                <div class="empty-state" style="cursor: default; text-align: left; align-items: stretch;">
-                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
-                        <div class="upload-icon-wrapper" style="margin-bottom: 0;"><i data-lucide="link"></i></div>
+                <div class="link-downloader-card">
+                    <div class="downloader-header">
+                        <div class="upload-icon-wrapper">
+                            <i data-lucide="link"></i>
+                        </div>
                         <div>
                             <h3 class="upload-title">Media Link Downloader</h3>
                             <p class="upload-hint">Extract and convert web video links directly to MP4 Video or MP3 Audio</p>
                         </div>
                     </div>
                     
-                    <div class="global-tab-settings" style="background: transparent; padding: 0.5rem 0; border: none; grid-template-columns: 2fr 1fr 1fr;">
+                    <div class="global-tab-settings downloader-settings">
                         <div class="control-group">
                             <label for="video-url-input">Website Link URL</label>
-                            <input type="url" id="video-url-input" class="native-styled-select" placeholder="https://www.youtube.com/watch?v=... or any web video link" style="cursor: text; background-image: none;">
+                            <input type="url" id="video-url-input" class="native-styled-select url-input-field" placeholder="https://www.youtube.com/watch?v=... or any web video link">
                         </div>
                         <div class="control-group">
                             <label for="media-type-select">Format</label>
@@ -280,12 +282,12 @@
                         </div>
                     </div>
 
-                    <div id="video-download-status" style="display: none; margin-top: 1rem; font-size: 0.88rem; font-weight: 600; color: var(--accent-blue);">
+                    <div id="video-download-status" class="download-status-msg" style="display: none;">
                         <span id="status-message">Extracting media stream... Please wait.</span>
                     </div>
 
-                    <button id="btn-convert-video" class="btn-primary-lg" type="button" style="align-self: flex-start; margin-top: 1.25rem;" onclick="convertVideoLink()">
-                        <span>Download Media File</span>
+                    <button id="btn-convert-video" class="btn-primary-lg" type="button" onclick="convertVideoLink()">
+                        <span>Download File</span>
                     </button>
                 </div>
             </div>

@@ -121,11 +121,11 @@ h1, h2, h3, h4 {
    TAB CONTAINER & NAVIGATION
    ============================================ */
 .tab-container {
-     background-color: var(--bg-surface);
+    background-color: var(--bg-surface);
     border: 1px solid var(--card-border);
     border-radius: 16px;
     box-shadow: var(--shadow-md);
-    overflow: visible; /* lets custom dropdown lists extend past the card */
+    overflow: visible;
 }
 
 .tab-container > .tab-bar {
@@ -144,8 +144,6 @@ h1, h2, h3, h4 {
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
 }
-
-
 
 .tab-btn {
     flex: 1;
@@ -261,6 +259,54 @@ h1, h2, h3, h4 {
     background-color: var(--accent-blue-hover);
     transform: translateY(-1px);
     box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
+}
+
+/* ============================================
+   LINK DOWNLOADER CLEAN FORM STYLES
+   ============================================ */
+.link-downloader-card {
+    border: 1px solid var(--border-light);
+    border-radius: 12px;
+    padding: 1.75rem 1.5rem;
+    background-color: var(--bg-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.downloader-header {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.downloader-header .upload-icon-wrapper {
+    margin-bottom: 0;
+    flex-shrink: 0;
+}
+
+.downloader-settings {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 1rem;
+}
+
+.url-input-field {
+    cursor: text !important;
+    background-image: none !important;
+}
+
+.download-status-msg {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+}
+
+.link-downloader-card .btn-primary-lg {
+    align-self: flex-start;
+    margin-top: 0.25rem;
 }
 
 /* ============================================
@@ -747,6 +793,10 @@ h1, h2, h3, h4 {
         gap: 0.85rem;
     }
 
+    .downloader-settings {
+        grid-template-columns: 1fr !important;
+    }
+
     .info-row {
         grid-template-columns: 1fr;
         gap: 0.75rem;
@@ -766,7 +816,7 @@ h1, h2, h3, h4 {
         justify-content: space-between;
     }
 
-    .btn-primary-action, .btn-primary-lg {
+    .btn-primary-action, .btn-primary-lg, .link-downloader-card .btn-primary-lg {
         width: 100%;
         justify-content: center;
     }

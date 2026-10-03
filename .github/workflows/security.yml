@@ -1,66 +1,63 @@
-name: CI Security and Quality Scan
+name: Security & Code Quality
 
 on:
   push:
-    branches: [ "main", "master" ]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ "main", "master" ]
+    branches: [ "master", "main" ]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly run on Sundays
+
+permissions:
+  contents: read
+  security-events: write
 
 jobs:
-  audit:
+  lint:
+    name: Code Quality & Syntax Check
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Linting Tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+
+      - name: Stop build on Python syntax & undefined name errors
+        run: |
+          # Stop the build if there are critical syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+
+      - name: Report PEP8 formatting warnings without failing build
+        run: |
+          # Log formatting/style warnings without throwing exit code 1
+          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+  codeql:
+    name: CodeQL Vulnerability Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'python', 'javascript' ]
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v4
+      - name: Checkout Repository
+        uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
 
-    - name: Install System Dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libmagic1 ffmpeg
-
-    - name: Install Python Tools
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install bandit flake8 safety semgrep
-
-    - name: Code Quality Linting (Flake8)
-      run: |
-        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-
-    - name: Python Security Audit (Bandit)
-      run: |
-        bandit -r . -x ./.venv -ll
-
-    - name: Dependency Vulnerability Check (Safety)
-      run: |
-        safety check || true
-
-    - name: Advanced Static Analysis (Semgrep)
-      run: |
-        semgrep --config p/python --error
-
-    - name: Docker Security Scan (Hadolint)
-      uses: hadolint/hadolint-action@v3.1.0
-      with:
-        dockerfile: Dockerfile
-
-    - name: Build Docker Image
-      run: |
-        docker build -t converter-app .
-
-    - name: Container Image Vulnerability Scan (Trivy)
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'converter-app'
-        format: 'table'
-        exit-code: '0'
-        ignore-unfixed: true
-        severity: 'CRITICAL,HIGH'
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3

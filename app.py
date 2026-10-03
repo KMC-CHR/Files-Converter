@@ -4,6 +4,15 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from dotenv import load_dotenv
 
+# Import local modules at top of file to satisfy PEP8/Flake8
+from utils import init_local_ai
+from routes.main import main_bp
+from routes.convert import convert_bp
+from routes.upscale import upscale_bp
+from routes.enhance import enhance_bp
+from routes.ai import ai_bp
+from routes.download import download_bp
+
 # Load local .env environment variables
 load_dotenv()
 
@@ -15,16 +24,7 @@ except Exception as e:
     print(f"INFO: HEIF opener optional mode active ({e})")
 
 # Initialize local OpenCV AI model on startup
-from utils import init_local_ai
 init_local_ai()
-
-# Import Blueprint modules
-from routes.main import main_bp
-from routes.convert import convert_bp
-from routes.upscale import upscale_bp
-from routes.enhance import enhance_bp
-from routes.ai import ai_bp
-from routes.download import download_bp
 
 
 def create_app():

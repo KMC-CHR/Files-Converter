@@ -1,32 +1,25 @@
 FROM python:3.11-slim
 
-# Install system dependencies in one layer as root
-# hadolint ignore=DL3008
+# Install system dependencies required for OpenCV and FFmpeg
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libmagic1 \
-    libheif-dev \
-    liblcms2-dev \
-    poppler-utils \
+    ffmpeg \
+    libgl1 \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
-
-# Create non-root system user
-RUN groupadd -r appuser && useradd -r -g appuser -s /bin/false appuser
 
 WORKDIR /app
 
-# Install Python dependencies
+# Copy requirements and install Python packages
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application assets
-COPY app.py .
-COPY static/ ./static/
-COPY templates/ ./templates/
+# Copy all application files (utils.py, app.py, routes, static, templates, model files)
+COPY . .
 
-# Set non-root ownership and switch user
-RUN chown -R appuser:appuser /app
+# Set up non-root app user
+RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
 EXPOSE 5000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "2", "--timeout", "120", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "4", "app:app"]

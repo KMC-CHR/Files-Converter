@@ -1,25 +1,62 @@
-# Python virtual environments
-.venv/
-venv/
-ENV/
-
-# Byte-compiled / Python cache files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
 
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env/
+
+# Editor & IDE Configs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Trunk linter temporary cache
+.trunk/
+
 # Environment variables & secrets
 .env
-*.env
+.env.*
+!.env.example
 
-# Operating system files
+# Heavy ML / AI Model weights (download dynamically or handle in Docker/deployment)
+LapSRN_x2.pb
+realesrgan.onnx
+
+# Sample or test upload images in static directory
+static/39.jpg
+
+# OS-generated files
 .DS_Store
 Thumbs.db
 
-# IDE configuration
-.vscode/
-.idea/
-
-# Docker build logs / local test output
-*.log
-/tmp/
+# Temporary download / conversion processing output
+tmp/
+temp/

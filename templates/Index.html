@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OmniShift — Free Online Image Converter, Upscaler & AI Enhancer</title>
+    <title>OmniShift — Free Online Image & Media Processing Workspace</title>
     
     <!-- Satoshi & Poppins Fonts -->
     <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,800,900&display=swap" rel="stylesheet">
@@ -55,6 +55,10 @@
                 <button class="tab-btn" onclick="switchTab('enhance', event)">
                     <i data-lucide="sliders"></i>
                     <span>Enhance</span>
+                </button>
+                <button class="tab-btn" onclick="switchTab('video-download', event)">
+                    <i data-lucide="video"></i>
+                    <span>Link Downloader</span>
                 </button>
             </div>
 
@@ -229,6 +233,63 @@
                 </div>
             </div>
 
+            <!-- TAB 5: LINK DOWNLOADER PANEL (MP4 / MP3) -->
+            <div id="panel-video-download" class="tab-panel">
+                <div class="empty-state" style="cursor: default; text-align: left; align-items: stretch;">
+                    <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.5rem;">
+                        <div class="upload-icon-wrapper" style="margin-bottom: 0;"><i data-lucide="link"></i></div>
+                        <div>
+                            <h3 class="upload-title">Media Link Downloader</h3>
+                            <p class="upload-hint">Extract and convert web video links directly to MP4 Video or MP3 Audio</p>
+                        </div>
+                    </div>
+                    
+                    <div class="global-tab-settings" style="background: transparent; padding: 0.5rem 0; border: none; grid-template-columns: 2fr 1fr 1fr;">
+                        <div class="control-group">
+                            <label for="video-url-input">Website Link URL</label>
+                            <input type="url" id="video-url-input" class="native-styled-select" placeholder="https://www.youtube.com/watch?v=... or any web video link" style="cursor: text; background-image: none;">
+                        </div>
+                        <div class="control-group">
+                            <label for="media-type-select">Format</label>
+                            <select id="media-type-select" class="native-styled-select" onchange="toggleMediaTypeSettings(this.value)">
+                                <option value="mp4" selected>MP4 (Video)</option>
+                                <option value="mp3">MP3 (Audio)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- MP4 Resolution Control -->
+                        <div class="control-group" id="group-video-quality">
+                            <label for="video-quality-select">Max Resolution</label>
+                            <select id="video-quality-select" class="native-styled-select">
+                                <option value="1080" selected>1080p (Full HD)</option>
+                                <option value="720">720p (HD)</option>
+                                <option value="480">480p (SD)</option>
+                                <option value="360">360p (Low)</option>
+                            </select>
+                        </div>
+
+                        <!-- MP3 Audio Bitrate Quality Control -->
+                        <div class="control-group" id="group-audio-quality" style="display: none;">
+                            <label for="audio-quality-select">Audio Quality</label>
+                            <select id="audio-quality-select" class="native-styled-select">
+                                <option value="320">320 kbps (High Quality)</option>
+                                <option value="256">256 kbps (Very Good)</option>
+                                <option value="192" selected>192 kbps (Standard)</option>
+                                <option value="128">128 kbps (Fastest)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="video-download-status" style="display: none; margin-top: 1rem; font-size: 0.88rem; font-weight: 600; color: var(--accent-blue);">
+                        <span id="status-message">Extracting media stream... Please wait.</span>
+                    </div>
+
+                    <button id="btn-convert-video" class="btn-primary-lg" type="button" style="align-self: flex-start; margin-top: 1.25rem;" onclick="convertVideoLink()">
+                        <span>Download Media File</span>
+                    </button>
+                </div>
+            </div>
+
         </main>
 
         <!-- Secondary Information Bar -->
@@ -243,7 +304,7 @@
             </div>
             <div class="info-item">
                 <i data-lucide="zap"></i>
-                <span>Free AI Super-Resolution — Powered by Hugging Face</span>
+                <span>Free AI Super-Resolution — Powered by OpenCV LapSRN</span>
             </div>
         </section>
 
@@ -252,27 +313,31 @@
             <h2 class="section-title">Frequently Asked Questions</h2>
             <div class="faq-container">
                 <details class="faq-item">
-                    <summary>What is the difference between Standard Upscaling and AI Super-Resolution?</summary>
-                    <p><strong>Standard Upscaling</strong> uses mathematical algorithms (such as Lanczos or Bicubic) to quickly interpolate and enlarge pixels. <strong>AI Super-Resolution</strong> uses a deep learning neural network hosted on serverless GPUs to intelligently reconstruct missing textures, crisp linework, and fine visual details without pixelation.</p>
+                    <summary>Can I download MP3 audio files directly from video links?</summary>
+                    <p>Yes. Select <strong>MP3 (Audio)</strong> in the Link Downloader tab to extract audio streams and convert them into MP3 audio files with customizable bitrates (up to 320kbps) powered by FFmpeg.</p>
                 </details>
                 <details class="faq-item">
-                    <summary>How does AI Super-Resolution handle PNG images with transparency?</summary>
-                    <p>Our backend normalizes transparent channels (RGBA) prior to passing processing data to the AI model. For transparent PNG files, background masks and alpha channels are preserved clean so your transparent cutouts remain sharp and usable.</p>
+                    <summary>What video resolutions are available for MP4 downloads?</summary>
+                    <p>You can choose maximum resolutions ranging from 360p up to 1080p Full HD. High-definition video and audio tracks are automatically merged on the fly.</p>
                 </details>
                 <details class="faq-item">
-                    <summary>Why does the first AI request take longer to finish?</summary>
-                    <p>The AI model runs on Hugging Face's serverless GPU infrastructure. If the inference model is idle when you send a request, it takes 5 to 10 seconds to wake up and load into GPU memory before processing your file.</p>
+                    <summary>What website video links are supported?</summary>
+                    <p>Powered by yt-dlp, the downloader supports thousands of sites including YouTube, Vimeo, Twitter/X, TikTok, and direct media link URLs.</p>
                 </details>
                 <details class="faq-item">
-                    <summary>Are my uploaded images stored or logged on your servers?</summary>
-                    <p>No. Every file uploaded for conversion, standard upscaling, enhancement, or AI processing is handled strictly in-memory (RAM) and streamed back to your browser. Garbage collection clears memory buffers immediately after each request.</p>
+                    <summary>What is the file size limit for video downloads?</summary>
+                    <p>To preserve server speed and prevent timeouts, single media link downloads are capped at 100MB per request.</p>
+                </details>
+                <details class="faq-item">
+                    <summary>How does AI Super-Resolution differ from Standard Upscaling?</summary>
+                    <p><strong>Standard Upscaling</strong> uses mathematical resampling (Lanczos/Bicubic) to enlarge pixel grids quickly. <strong>AI Super-Resolution</strong> utilizes deep learning to reconstruct sharp edges, missing line details, and clean transparency masks without blurry pixelation.</p>
                 </details>
             </div>
         </section>
 
         <!-- Footer -->
         <footer class="app-footer">
-            <p>&copy; 2026 OmniShift. Built with Flask, Pillow & Hugging Face.</p>
+            <p>&copy; 2026 OmniShift. Built with Flask, Pillow, OpenCV & yt-dlp.</p>
         </footer>
 
     </div>
@@ -280,7 +345,6 @@
    <script>
     lucide.createIcons();
 
-    // Strict batch limits per mode to prevent memory overflow and API blocks
     const BATCH_LIMITS = {
         'convert': 10,
         'upscale': 5,
@@ -305,7 +369,79 @@
         document.getElementById('panel-' + tabName).classList.add('active');
     }
 
-    // Prevent default browser drag-over behavior
+    function toggleMediaTypeSettings(type) {
+        const videoGroup = document.getElementById('group-video-quality');
+        const audioGroup = document.getElementById('group-audio-quality');
+
+        if (type === 'mp3') {
+            if (videoGroup) videoGroup.style.display = 'none';
+            if (audioGroup) audioGroup.style.display = 'flex';
+        } else {
+            if (videoGroup) videoGroup.style.display = 'flex';
+            if (audioGroup) audioGroup.style.display = 'none';
+        }
+    }
+
+    /* CUSTOM COMPACT DROPDOWN MENU HANDLER */
+    function initCustomSelects() {
+        document.querySelectorAll('select.native-styled-select').forEach(select => {
+            if (select.parentNode.classList.contains('cs-wrap')) return;
+
+            const wrap = document.createElement('div');
+            wrap.className = 'cs-wrap';
+            select.parentNode.insertBefore(wrap, select);
+            wrap.appendChild(select);
+
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'cs-button';
+            button.tabIndex = 0;
+            wrap.appendChild(button);
+
+            const list = document.createElement('ul');
+            list.className = 'cs-list';
+            wrap.appendChild(list);
+
+            function sync() {
+                const selectedOption = select.options[select.selectedIndex] || select.options[0];
+                button.textContent = selectedOption ? selectedOption.textContent : '';
+                list.innerHTML = '';
+                
+                Array.from(select.options).forEach((opt, idx) => {
+                    const li = document.createElement('li');
+                    li.className = 'cs-item';
+                    if (idx === select.selectedIndex) li.setAttribute('aria-selected', 'true');
+                    li.textContent = opt.textContent;
+                    li.onclick = (e) => {
+                        e.stopPropagation();
+                        select.selectedIndex = idx;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                        sync();
+                        wrap.classList.remove('open');
+                    };
+                    list.appendChild(li);
+                });
+            }
+
+            button.onclick = (e) => {
+                e.stopPropagation();
+                document.querySelectorAll('.cs-wrap.open').forEach(w => {
+                    if (w !== wrap) w.classList.remove('open');
+                });
+                wrap.classList.toggle('open');
+            };
+
+            select.addEventListener('change', sync);
+            sync();
+        });
+    }
+
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.cs-wrap')) {
+            document.querySelectorAll('.cs-wrap.open').forEach(w => w.classList.remove('open'));
+        }
+    });
+
     ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
         window.addEventListener(eventName, (e) => {
             e.preventDefault();
@@ -346,6 +482,7 @@
         setupDropZone('drop-zone-upscale', 'file-input-upscale', 'upscale');
         setupDropZone('drop-zone-ai-upscale', 'file-input-ai-upscale', 'ai-upscale');
         setupDropZone('drop-zone-enhance', 'file-input-enhance', 'enhance');
+        initCustomSelects();
     });
 
     function addFilesToQueue(files, mode) {
@@ -364,7 +501,6 @@
         const batchSelect = document.getElementById(`batch-format-${mode}`);
         if (batchSelect) defaultFormat = batchSelect.value;
 
-        // Add files up to allowed remaining slots
         const filesToAdd = Array.from(files).slice(0, remainingSlots);
         if (files.length > remainingSlots) {
             alert(`Added ${remainingSlots} file(s). Exceeded maximum batch limit of ${maxLimit} files for this tab.`);
@@ -442,35 +578,55 @@
 
             const hideFormatSelector = mode === 'ai-upscale';
 
-            itemEl.innerHTML = `
-                <div class="file-item-left">
-                    <i data-lucide="image" class="file-icon"></i>
-                    <div class="file-info">
-                        <span class="file-name" title="${item.file.name}">${item.file.name}</span>
-                        <span class="file-size">${mbSize} MB</span>
-                    </div>
-                </div>
-                <div class="file-item-right">
-                    ${actionBadge}
-                    ${!hideFormatSelector ? `
-                    <select class="native-styled-select select-compact" onchange="updateItemFormat('${mode}', '${item.id}', this.value)" ${item.status === 'Processing' ? 'disabled' : ''}>
-                        <option value="png" ${item.format === 'png' ? 'selected' : ''}>PNG</option>
-                        <option value="jpg" ${item.format === 'jpg' ? 'selected' : ''}>JPG</option>
-                        <option value="webp" ${item.format === 'webp' ? 'selected' : ''}>WEBP</option>
-                    </select>
-                    ` : ''}
-                    <button class="btn-remove-item" onclick="removeQueueItem('${mode}', '${item.id}')">
-                        <i data-lucide="x"></i>
-                    </button>
-                </div>
+            const fileLeftDiv = document.createElement('div');
+            fileLeftDiv.className = 'file-item-left';
+
+            const fileIcon = document.createElement('i');
+            fileIcon.setAttribute('data-lucide', 'image');
+            fileIcon.className = 'file-icon';
+
+            const fileInfoDiv = document.createElement('div');
+            fileInfoDiv.className = 'file-info';
+
+            const fileNameSpan = document.createElement('span');
+            fileNameSpan.className = 'file-name';
+            fileNameSpan.title = item.file.name;
+            fileNameSpan.textContent = item.file.name;
+
+            const fileSizeSpan = document.createElement('span');
+            fileSizeSpan.className = 'file-size';
+            fileSizeSpan.textContent = `${mbSize} MB`;
+
+            fileInfoDiv.appendChild(fileNameSpan);
+            fileInfoDiv.appendChild(fileSizeSpan);
+            fileLeftDiv.appendChild(fileIcon);
+            fileLeftDiv.appendChild(fileInfoDiv);
+
+            const fileRightDiv = document.createElement('div');
+            fileRightDiv.className = 'file-item-right';
+            fileRightDiv.innerHTML = `
+                ${actionBadge}
+                ${!hideFormatSelector ? `
+                <select class="native-styled-select select-compact" onchange="updateItemFormat('${mode}', '${item.id}', this.value)" ${item.status === 'Processing' ? 'disabled' : ''}>
+                    <option value="png" ${item.format === 'png' ? 'selected' : ''}>PNG</option>
+                    <option value="jpg" ${item.format === 'jpg' ? 'selected' : ''}>JPG</option>
+                    <option value="webp" ${item.format === 'webp' ? 'selected' : ''}>WEBP</option>
+                </select>
+                ` : ''}
+                <button class="btn-remove-item" onclick="removeQueueItem('${mode}', '${item.id}')">
+                    <i data-lucide="x"></i>
+                </button>
             `;
+
+            itemEl.appendChild(fileLeftDiv);
+            itemEl.appendChild(fileRightDiv);
             itemsList.appendChild(itemEl);
         });
 
         lucide.createIcons();
+        initCustomSelects();
     }
 
-    // Triggers immediate browser download without manual clicks
     function triggerAutoDownload(blob, filename) {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -486,7 +642,6 @@
         }, 1000);
     }
 
-    // Batch process with auto-downloading upon completion
     async function processBatch(mode, retryCount = 0) {
         const btn = document.getElementById(`btn-process-${mode}`);
         if (btn) btn.disabled = true;
@@ -529,7 +684,6 @@
                 const blob = await response.blob();
                 const outputName = `${mode}_${osFilenameWithoutExt(item.file.name)}.${mode === 'ai-upscale' ? 'png' : item.format}`;
                 
-                // Automatically download immediately
                 triggerAutoDownload(blob, outputName);
                 
                 item.status = 'Done';
@@ -540,6 +694,68 @@
         }
 
         if (btn) btn.disabled = false;
+    }
+
+    async function convertVideoLink() {
+        const input = document.getElementById('video-url-input');
+        const mediaTypeSelect = document.getElementById('media-type-select');
+        const qualitySelect = document.getElementById('video-quality-select');
+        const audioQualitySelect = document.getElementById('audio-quality-select');
+        const btn = document.getElementById('btn-convert-video');
+        const statusDiv = document.getElementById('video-download-status');
+        const statusMsg = document.getElementById('status-message');
+        
+        const url = input ? input.value.trim() : '';
+        const mediaType = mediaTypeSelect ? mediaTypeSelect.value : 'mp4';
+        const quality = mediaType === 'mp3' 
+            ? (audioQualitySelect ? audioQualitySelect.value : '192')
+            : (qualitySelect ? qualitySelect.value : '1080');
+
+        if (!url) {
+            alert('Please enter a valid media link.');
+            return;
+        }
+
+        btn.disabled = true;
+        if (statusMsg) {
+            statusMsg.textContent = mediaType === 'mp3' 
+                ? 'Extracting audio stream and converting to MP3... Please wait.' 
+                : 'Extracting video stream and converting to MP4... Please wait.';
+        }
+        statusDiv.style.display = 'block';
+
+        try {
+            const response = await fetch('/download-media', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: url, type: mediaType, quality: quality })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.error || 'Media extraction failed');
+            }
+
+            const blob = await response.blob();
+            
+            let filename = mediaType === 'mp3' ? 'audio.mp3' : 'video.mp4';
+            const disposition = response.headers.get('Content-Disposition');
+            if (disposition && disposition.indexOf('filename=') !== -1) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            triggerAutoDownload(blob, filename);
+            input.value = '';
+            alert(`Media successfully processed and downloaded as ${mediaType.toUpperCase()}!`);
+        } catch (err) {
+            alert(`Error: ${err.message}`);
+        } finally {
+            btn.disabled = false;
+            statusDiv.style.display = 'none';
+        }
     }
 
     function osFilenameWithoutExt(filename) {

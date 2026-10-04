@@ -282,12 +282,21 @@
                         </div>
                     </div>
 
-                    <div id="video-download-status" class="download-status-msg" style="display: none;">
-                        <span id="status-message">Extracting media stream... Please wait.</span>
+                    <!-- Processing Status & Animated Loading Bar -->
+                    <div id="video-download-status" class="download-status-card" style="display: none;">
+                        <div class="status-indicator-header">
+                            <span class="badge badge-busy">
+                                <i data-lucide="loader-2" class="spinner-icon"></i> Processing Stream
+                            </span>
+                            <span id="status-message" class="status-message-text">Extracting media file... Please wait.</span>
+                        </div>
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill"></div>
+                        </div>
                     </div>
 
                     <button id="btn-convert-video" class="btn-primary-lg" type="button" onclick="convertVideoLink()">
-                        <span>Download File</span>
+                        <span>Download Media File</span>
                     </button>
                 </div>
             </div>
@@ -719,12 +728,14 @@
         }
 
         btn.disabled = true;
+        btn.style.opacity = '0.6';
         if (statusMsg) {
             statusMsg.textContent = mediaType === 'mp3' 
-                ? 'Extracting audio stream and converting to MP3... Please wait.' 
-                : 'Extracting video stream and converting to MP4... Please wait.';
+                ? 'Extracting audio stream & converting to MP3...' 
+                : `Extracting video stream (${quality}p HD)...`;
         }
         statusDiv.style.display = 'block';
+        lucide.createIcons();
 
         try {
             const response = await fetch('/download-media', {
@@ -733,9 +744,13 @@
                 body: JSON.stringify({ url: url, type: mediaType, quality: quality })
             });
 
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || 'Media extraction failed');
+             if (!response.ok) {
+                let msg = 'Media extraction failed (server error or timeout)';
+                try {
+                    const errData = await response.json();
+                    msg = errData.error || msg;
+                } catch (_) {}
+                throw new Error(msg);
             }
 
             const blob = await response.blob();
@@ -751,11 +766,11 @@
 
             triggerAutoDownload(blob, filename);
             input.value = '';
-            alert(`Media successfully processed and downloaded as ${mediaType.toUpperCase()}!`);
         } catch (err) {
             alert(`Error: ${err.message}`);
         } finally {
             btn.disabled = false;
+            btn.style.opacity = '1';
             statusDiv.style.display = 'none';
         }
     }

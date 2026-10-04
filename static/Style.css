@@ -306,22 +306,22 @@ h1, h2, h3, h4 {
    REFINED LOADING UI & PROGRESS BAR
    ============================================ */
 .download-status-card {
-   background-color: var(--bg-surface);
+    background-color: var(--bg-surface);
     border: 1px solid var(--accent-blue-border);
     border-radius: 12px;
     padding: 1.25rem 1.5rem;
     display: flex;
     flex-direction: column;
-    gap: 0; /* remove the non-working gap */
+    gap: 0;
     box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
 }
 
 .status-indicator-header {
-     display: flex;
+    display: flex;
     align-items: center;
     gap: 0.85rem;
     flex-wrap: wrap;
-    margin-bottom: 1rem; /* space between label and bar */
+    margin-bottom: 1rem;
 }
 
 .status-message-text {
@@ -357,7 +357,6 @@ h1, h2, h3, h4 {
     width: 0%;
     background: linear-gradient(90deg, #3b82f6 0%, #1d4ed8 100%);
     border-radius: 99px;
-    /* Smooth left-to-right fill progress */
     animation: progress-grow 12s cubic-bezier(0.1, 0.8, 0.2, 1) forwards;
 }
 
@@ -386,7 +385,7 @@ h1, h2, h3, h4 {
     border: 1px solid var(--card-border);
     border-radius: 12px;
     background-color: var(--bg-surface);
-    overflow: hidden;
+    overflow: visible;
 }
 
 .queue-header {
@@ -556,6 +555,8 @@ h1, h2, h3, h4 {
     padding: 0.85rem 1.25rem;
     background-color: var(--bg-subtle);
     border-top: 1px solid var(--card-border);
+    position: relative;
+    z-index: 2;
 }
 
 .batch-controls {

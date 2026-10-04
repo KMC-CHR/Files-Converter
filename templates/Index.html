@@ -396,7 +396,7 @@
     /* CUSTOM COMPACT DROPDOWN MENU HANDLER */
     function initCustomSelects() {
         document.querySelectorAll('select.native-styled-select').forEach(select => {
-            if (select.parentNode.classList.contains('cs-wrap')) return;
+            if (select.closest('.cs-wrap')) return;
 
             const wrap = document.createElement('div');
             wrap.className = 'cs-wrap';

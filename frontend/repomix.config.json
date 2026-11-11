@@ -1,0 +1,15 @@
+{
+  "output": {
+    "filePath": "repomix-output.xml"
+  },
+  "ignore": {
+    "useGitignore": true,
+    "customPatterns": [
+      "repomix-output.xml",
+      "repomix-output.txt",
+      "package-lock.json",
+      "dist/**",
+      "node_modules/**"
+    ]
+  }
+}

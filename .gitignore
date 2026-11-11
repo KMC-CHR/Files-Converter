@@ -46,9 +46,11 @@ env/
 .env.*
 !.env.example
 
-# Heavy ML / AI Model weights (download dynamically or handle in Docker/deployment)
+# Heavy ML / AI Model weights
 LapSRN_x2.pb
+app/LapSRN_x2.pb
 realesrgan.onnx
+app/realesrgan.onnx
 
 # Sample or test upload images in static directory
 static/39.jpg
@@ -60,3 +62,19 @@ Thumbs.db
 # Temporary download / conversion processing output
 tmp/
 temp/
+
+# Node / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+dist-ssr/
+frontend/dist/
+frontend/dist-ssr/
+*.log
+
+# Repomix outputs
+repomix-output.*
+repomix.*.txt
+frontend/repomix-output.*
+frontend/repomix.*.txt
+

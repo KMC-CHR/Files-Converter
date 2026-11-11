@@ -1,0 +1,102 @@
+# Repomix ignore patterns
+# Documentation: https://repomix.com/guide/configuration
+
+# Repomix / AI Bundles
+repomix-output.*
+repomix-output.txt
+repomix-output.xml
+repomix-output.json
+repomix-output.markdown
+repomix.*.txt
+**/repomix-output.*
+**/repomix.*.txt
+
+# Git & VCS
+.git/
+.github/
+
+# Dependencies & Environments
+node_modules/
+**/node_modules/
+frontend/node_modules/
+.venv/
+venv/
+ENV/
+env/
+
+# Build artifacts & distributions
+dist/
+**/dist/
+build/
+frontend/dist/
+frontend/dist-ssr/
+*.egg-info/
+.eggs/
+
+# Python cache & compiled files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Lock files (too verbose for LLM prompt context)
+package-lock.json
+**/package-lock.json
+frontend/package-lock.json
+yarn.lock
+pnpm-lock.yaml
+poetry.lock
+
+# Binary assets, images, audio, video, models
+*.onnx
+*.pb
+*.tflite
+*.pt
+*.pth
+*.bin
+*.weights
+*.pkl
+*.h5
+LapSRN_x2.pb
+realesrgan.onnx
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.webp
+*.ico
+*.svg
+*.pdf
+*.zip
+*.tar.gz
+*.tar
+*.rar
+*.7z
+*.mp3
+*.wav
+*.mp4
+*.mkv
+*.webm
+
+# Temporary, cache, and log files
+tmp/
+temp/
+logs/
+*.log
+.trunk/
+.turbo/
+.cache/
+
+# Environment variables & secrets
+.env
+.env.*
+!.env.example
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+

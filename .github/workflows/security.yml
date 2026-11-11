@@ -6,58 +6,66 @@ on:
   pull_request:
     branches: [ "master", "main" ]
   schedule:
-    - cron: '0 0 * * 0' # Weekly run on Sundays
+    - cron: '0 0 * * 0'
 
-permissions:
-  contents: read
-  security-events: write
+permissions: {}
 
 jobs:
   lint:
-    name: Code Quality & Syntax Check
+    name: Code Quality & Dependency Audit
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@0d109c38493e9619a846d03a270768b4d812d45c # v5.4.0
         with:
           python-version: '3.11'
 
-      - name: Install Linting Tools
+      - name: Python Syntax & Dependency Check
         run: |
           python -m pip install --upgrade pip
-          pip install flake8
-
-      - name: Stop build on Python syntax & undefined name errors
-        run: |
-          # Stop the build if there are critical syntax errors or undefined names
+          pip install flake8 pip-audit
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          pip-audit --ignore-code 130
 
-      - name: Report PEP8 formatting warnings without failing build
+      - name: Set up Node.js
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fbd5faf # v4.1.0
+        with:
+          node-version: 20
+
+      - name: Frontend Quality (Oxlint) & Security Audit
         run: |
-          # Log formatting/style warnings without throwing exit code 1
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          if [ -f "package.json" ]; then
+            npm ci
+            npx oxlint
+            npm audit --audit-level=high
+          fi
 
   codeql:
     name: CodeQL Vulnerability Analysis
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'python', 'javascript' ]
+        language: [ 'python', 'javascript-typescript' ]
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@9e8d4cfec8659328972b3634ed0e68d172e29780 # v3.28.11
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@9e8d4cfec8659328972b3634ed0e68d172e29780 # v3.28.11

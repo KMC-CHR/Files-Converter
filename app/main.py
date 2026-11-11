@@ -12,6 +12,7 @@ from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 
 APP_DIR = Path(__file__).resolve().parent
+ROOT_DIR = APP_DIR.parent  # repo root (/app in the container)
 if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
@@ -85,8 +86,8 @@ app.include_router(download_router)
 async def health_check():
     return {"status": "ok"}
 
-# Correct path pointing directly to frontend/dist relative to root main.py
-DIST_DIR = APP_DIR / "frontend" / "dist"
+# frontend/dist lives at the repo root, one level above this app/ folder
+DIST_DIR = ROOT_DIR / "frontend" / "dist"
 ASSETS_DIR = DIST_DIR / "assets"
 MODELS_DIR = DIST_DIR / "models"
 
@@ -97,9 +98,12 @@ if ASSETS_DIR.exists():
 if MODELS_DIR.exists():
     app.mount("/models", StaticFiles(directory=str(MODELS_DIR)), name="models")
 
-# Mount static directory if existing legacy static folder is present
-LEGACY_STATIC_DIR = APP_DIR / "static"
-if LEGACY_STATIC_DIR.exists():
+# Mount legacy static folder if present (checks the repo root, then app/)
+LEGACY_STATIC_DIR = next(
+    (p for p in (ROOT_DIR / "static", APP_DIR / "static") if p.exists()),
+    None,
+)
+if LEGACY_STATIC_DIR is not None:
     app.mount("/static", StaticFiles(directory=str(LEGACY_STATIC_DIR)), name="legacy_static")
 
 # Catch-all route to serve compiled SPA files or fallback to index.html

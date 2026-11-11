@@ -30,7 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install flake8 pip-audit
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          pip-audit --ignore-code 130
+          pip-audit
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

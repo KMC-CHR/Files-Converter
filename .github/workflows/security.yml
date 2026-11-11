@@ -18,10 +18,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@0d109c38493e9619a846d03a270768b4d812d45c # v5.4.0
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -33,7 +33,7 @@ jobs:
           pip-audit --ignore-code 130
 
       - name: Set up Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fbd5faf # v4.1.0
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -59,13 +59,13 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@9e8d4cfec8659328972b3634ed0e68d172e29780 # v3.28.11
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
           queries: security-extended
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@9e8d4cfec8659328972b3634ed0e68d172e29780 # v3.28.11
+        uses: github/codeql-action/analyze@v3

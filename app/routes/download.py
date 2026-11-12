@@ -148,21 +148,17 @@ async def download_media(payload: DownloadRequest, request: Request):
         loaded_cookie_file = next((p for p in secret_cookie_paths if os.path.isfile(p)), None)
 
         if loaded_cookie_file:
-            with open(loaded_cookie_file, 'r', encoding='utf-8') as src:
-                raw_cookies = src.read().strip()
+            cookie_path = os.path.join(temp_dir, 'cookies.txt')
+            shutil.copyfile(loaded_cookie_file, cookie_path)
+            base_ydl_opts['cookiefile'] = cookie_path
         else:
             raw_cookies = os.environ.get('YOUTUBE_COOKIES', '').strip()
-
-        if raw_cookies:
-            if (raw_cookies.startswith("'") and raw_cookies.endswith("'")) or (
-                raw_cookies.startswith('"') and raw_cookies.endswith('"')
-            ):
-                raw_cookies = raw_cookies[1:-1]
-            raw_cookies = raw_cookies.replace('\\n', '\n').replace('\\t', '\t')
-            cookie_path = os.path.join(temp_dir, 'cookies.txt')
-            with open(cookie_path, 'w', encoding='utf-8') as f:
-                f.write(raw_cookies + '\n')
-            base_ydl_opts['cookiefile'] = cookie_path
+            if raw_cookies:
+                raw_cookies = raw_cookies.replace('\\n', '\n').replace('\\t', '\t')
+                cookie_path = os.path.join(temp_dir, 'cookies.txt')
+                with open(cookie_path, 'w', encoding='utf-8') as f:
+                    f.write(raw_cookies + '\n')
+                base_ydl_opts['cookiefile'] = cookie_path
 
         if media_type == 'mp3':
             bitrate = quality if quality in ('320', '256', '192', '128') else '192'

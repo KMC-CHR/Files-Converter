@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Sparkles,
   Plus,
@@ -17,7 +17,11 @@ const IMAGE_EXTENSION_REGEX = /\.(png|jpe?g|webp|gif|bmp|tiff?|avif)$/i;
 interface QueueItem {
   id: string;
   file: File;
-  status: "ready" | "processing" | "done" | "error";
+  status: "ready" | "processing" | "done" | "done-local" | "error";
+}
+
+interface AiSuperResToolProps {
+  onBusyChange?: (busy: boolean) => void;
 }
 
 function isSupportedImageFile(file: File): boolean {
@@ -27,12 +31,24 @@ function isSupportedImageFile(file: File): boolean {
   return IMAGE_EXTENSION_REGEX.test(file.name);
 }
 
-export const AiSuperResTool = () => {
+export const AiSuperResTool: React.FC<AiSuperResToolProps> = ({ onBusyChange }) => {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef<number>(0);
+  const isProcessingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    onBusyChange?.(isProcessing);
+  }, [isProcessing, onBusyChange]);
+
+  useEffect(() => {
+    return () => {
+      onBusyChange?.(false);
+    };
+  }, [onBusyChange]);
 
   const addFiles = (incomingFiles: File[]) => {
     const imageFiles = incomingFiles.filter(isSupportedImageFile);
@@ -52,6 +68,62 @@ export const AiSuperResTool = () => {
     });
   };
 
+  const addFilesRef = useRef(addFiles);
+  useEffect(() => {
+    addFilesRef.current = addFiles;
+  });
+
+  useEffect(() => {
+    const hasFiles = (e: DragEvent): boolean =>
+      Boolean(e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes("Files"));
+
+    const onWindowDragEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current += 1;
+      if (dragDepthRef.current === 1) {
+        setIsDragging(true);
+      }
+    };
+
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
+
+    const onWindowDragLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const onWindowDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setIsDragging(false);
+      const droppedList = e.dataTransfer?.files;
+      if (droppedList && droppedList.length > 0) {
+        addFilesRef.current(Array.from(droppedList));
+      }
+    };
+
+    window.addEventListener("dragenter", onWindowDragEnter);
+    window.addEventListener("dragover", onWindowDragOver);
+    window.addEventListener("dragleave", onWindowDragLeave);
+    window.addEventListener("drop", onWindowDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", onWindowDragEnter);
+      window.removeEventListener("dragover", onWindowDragOver);
+      window.removeEventListener("dragleave", onWindowDragLeave);
+      window.removeEventListener("drop", onWindowDrop);
+    };
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedList = e.target.files;
     if (selectedList && selectedList.length > 0) {
@@ -59,35 +131,6 @@ export const AiSuperResTool = () => {
       addFiles(copiedFiles);
     }
     e.target.value = "";
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy";
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const relatedTarget = e.relatedTarget as Node | null;
-    if (relatedTarget && e.currentTarget.contains(relatedTarget)) return;
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const droppedList = e.dataTransfer.files;
-    if (!droppedList || droppedList.length === 0) return;
-
-    const copiedFiles = Array.from(droppedList);
-    addFiles(copiedFiles);
   };
 
   const openFilePicker = () => {
@@ -98,10 +141,12 @@ export const AiSuperResTool = () => {
   };
 
   const removeItem = (id: string) => {
+    if (isProcessingRef.current) return;
     setQueue((prev) => prev.filter((item) => item.id !== id));
   };
 
   const clearQueue = () => {
+    if (isProcessingRef.current) return;
     setQueue([]);
   };
 
@@ -111,23 +156,32 @@ export const AiSuperResTool = () => {
   };
 
   const processQueue = async () => {
-    if (queue.length === 0 || isProcessing) return;
+    if (queue.length === 0 || isProcessing || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setIsProcessing(true);
 
-    for (const item of queue) {
-      if (item.status === "done") continue;
+    try {
+      for (const item of queue) {
+        if (item.status === "done" || item.status === "done-local") continue;
 
-      setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "processing" } : i)));
+        setQueue((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, status: "processing" } : i)),
+        );
 
-      try {
-        await aiSuperResImage(item.file);
-        setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "done" } : i)));
-      } catch {
-        setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "error" } : i)));
+        try {
+          const source = await aiSuperResImage(item.file);
+          const nextStatus = source === "local" ? "done-local" : "done";
+          setQueue((prev) =>
+            prev.map((i) => (i.id === item.id ? { ...i, status: nextStatus } : i)),
+          );
+        } catch {
+          setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "error" } : i)));
+        }
       }
+    } finally {
+      isProcessingRef.current = false;
+      setIsProcessing(false);
     }
-
-    setIsProcessing(false);
   };
 
   const isAtCapacity = queue.length >= MAXIMUM_FILES_LIMIT;
@@ -147,9 +201,6 @@ export const AiSuperResTool = () => {
         <div
           className={`atelier-dropzone ${isDragging ? "dragging" : ""}`}
           onClick={openFilePicker}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -171,7 +222,7 @@ export const AiSuperResTool = () => {
             }}
           >
             <h3 className="atelier-drop-title">
-              {isDragging ? "Release to add images" : "Drop images to rebuild fine detail"}
+              {isDragging ? "Release anywhere to add images" : "Drop images to rebuild fine detail"}
             </h3>
             <p className="atelier-drop-hint">
               Reconstruct up to {MAXIMUM_FILES_LIMIT} images at once while keeping transparent edges
@@ -192,9 +243,6 @@ export const AiSuperResTool = () => {
       ) : (
         <div
           className="queue-wrapper"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           style={
             isDragging
               ? {
@@ -227,7 +275,7 @@ export const AiSuperResTool = () => {
               </h2>
               <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
                 Total batch size: {calculateTotalSize()} MB{" "}
-                {isDragging ? "• Release to add more" : ""}
+                {isDragging ? "• Release anywhere to add more" : ""}
               </p>
             </div>
 
@@ -235,7 +283,7 @@ export const AiSuperResTool = () => {
               <button
                 type="button"
                 onClick={openFilePicker}
-                disabled={isAtCapacity}
+                disabled={isAtCapacity || isProcessing}
                 className="btn-secondary"
                 style={{
                   width: "44px",
@@ -252,6 +300,7 @@ export const AiSuperResTool = () => {
               <button
                 type="button"
                 onClick={clearQueue}
+                disabled={isProcessing}
                 className="btn-secondary"
                 style={{
                   width: "44px",
@@ -314,6 +363,11 @@ export const AiSuperResTool = () => {
                       <CheckCircle2 size={13} strokeWidth={1.75} className="shrink-0" />
                       Done
                     </span>
+                  ) : item.status === "done-local" ? (
+                    <span className="status-pill completed">
+                      <CheckCircle2 size={13} strokeWidth={1.75} className="shrink-0" />
+                      Done (Local)
+                    </span>
                   ) : item.status === "error" ? (
                     <span className="status-pill error">Failed</span>
                   ) : (
@@ -323,6 +377,7 @@ export const AiSuperResTool = () => {
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
+                    disabled={isProcessing}
                     style={{
                       width: "44px",
                       height: "44px",
@@ -331,7 +386,8 @@ export const AiSuperResTool = () => {
                       justifyContent: "center",
                       background: "none",
                       border: "none",
-                      cursor: "pointer",
+                      cursor: isProcessing ? "not-allowed" : "pointer",
+                      opacity: isProcessing ? 0.45 : 1,
                       color: "var(--text-muted)",
                       borderRadius: "var(--radius-sm)",
                     }}

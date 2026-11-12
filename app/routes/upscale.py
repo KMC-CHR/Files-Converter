@@ -3,7 +3,12 @@ import os
 import gc
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Response
 from PIL import Image, ImageFilter
-from utils import normalize_image
+from utils import (
+    normalize_image,
+    open_validated_image,
+    read_bounded_upload,
+    safe_download_filename,
+)
 
 upscale_router = APIRouter(prefix="/api", tags=["Upscale"])
 
@@ -33,8 +38,8 @@ async def upscale_single(
     resample_filter = filter_map.get(resample_mode, Image.Resampling.LANCZOS)
 
     try:
-        input_bytes = await file.read()
-        img = Image.open(io.BytesIO(input_bytes))
+        input_bytes = await read_bounded_upload(file)
+        img = open_validated_image(input_bytes)
         img = normalize_image(img)
 
         width_percent = (target_width / float(img.size[0]))
@@ -68,8 +73,7 @@ async def upscale_single(
         del input_bytes, img, img_resized
         gc.collect()
 
-        filename_no_ext = os.path.splitext(file.filename)[0]
-        download_name = f"upscaled_{target_res}_{filename_no_ext}.{ext}"
+        download_name = safe_download_filename(file.filename, f"upscaled_{target_res}_", ext)
 
         return Response(
             content=content_bytes,
@@ -78,6 +82,9 @@ async def upscale_single(
                 "Content-Disposition": f'attachment; filename="{download_name}"'
             }
         )
+    except HTTPException:
+        gc.collect()
+        raise
     except Exception as e:
         gc.collect()
         raise HTTPException(status_code=500, detail=f"Upscaling failed: {str(e)}")

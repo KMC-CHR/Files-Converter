@@ -80,6 +80,7 @@ Files-Converter/
 ### 1. Backend Setup (FastAPI)
 
 1. Open a terminal and navigate to the repository root:
+
    ```bash
    cd Files-Converter
    ```
@@ -97,6 +98,7 @@ Files-Converter/
      ```
 
 3. Install required Python packages:
+
    ```bash
    pip install -r requirements.txt
    ```
@@ -112,16 +114,19 @@ Files-Converter/
 ### 2. Frontend Setup (React + Vite)
 
 1. Open a separate terminal window and navigate to the `frontend` directory:
+
    ```bash
    cd Files-Converter/frontend
    ```
 
 2. Install frontend dependencies:
+
    ```bash
    npm install
    ```
 
 3. Launch the Vite development server:
+
    ```bash
    npm run dev
    ```
@@ -137,11 +142,14 @@ Files-Converter/
 ## Production Build
 
 ### Frontend Build
+
 To create an optimized production build of the frontend:
+
 ```bash
 cd frontend
 npm run build
 ```
+
 Compiled production assets will be output to `frontend/dist/`.
 
 ---
@@ -151,16 +159,19 @@ Compiled production assets will be output to `frontend/dist/`.
 You can build and deploy the backend container using Docker. The Dockerfile installs FFmpeg, system libraries for OpenCV, and Deno for yt-dlp media extraction.
 
 1. Build the Docker image:
+
    ```bash
    docker build -t omnishift-backend .
    ```
 
 2. Run the container:
+
    ```bash
    docker run -d -p 8000:8000 --name omnishift omnishift-backend
    ```
 
 3. Check container logs:
+
    ```bash
    docker logs -f omnishift
    ```
@@ -174,14 +185,14 @@ You can build and deploy the backend container using Docker. The Dockerfile inst
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/healthz` | System health check status |
-| `POST` | `/api/convert` | Converts image format (PNG, JPEG, WebP) |
-| `POST` | `/api/upscale` | Standard resolution upscaling (720p, 1080p, 2K, 4K) |
-| `POST` | `/api/enhance` | Image enhancement (sharpness, contrast, vibrancy) |
-| `POST` | `/api/ai-upscale` | 2x local AI super-resolution using LapSRN model |
-| `POST` | `/api/download` | Downloads and converts online media via yt-dlp |
+| Method | Endpoint          | Description                                         |
+| ------ | ----------------- | --------------------------------------------------- |
+| `GET`  | `/healthz`        | System health check status                          |
+| `POST` | `/api/convert`    | Converts image format (PNG, JPEG, WebP)             |
+| `POST` | `/api/upscale`    | Standard resolution upscaling (720p, 1080p, 2K, 4K) |
+| `POST` | `/api/enhance`    | Image enhancement (sharpness, contrast, vibrancy)   |
+| `POST` | `/api/ai-upscale` | 2x local AI super-resolution using LapSRN model     |
+| `POST` | `/api/download`   | Downloads and converts online media via yt-dlp      |
 
 ---
 

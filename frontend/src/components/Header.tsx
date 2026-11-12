@@ -64,7 +64,26 @@ export const Header: React.FC<HeaderProps> = ({ theme, onToggleTheme }) => {
             <Moon size={13} strokeWidth={1.75} />
           </span>
           <span className="theme-slider-thumb" aria-hidden="true">
-            {isDark ? <Moon size={13} strokeWidth={2} /> : <Sun size={13} strokeWidth={2} />}
+            <Sun
+              size={13}
+              strokeWidth={2}
+              style={{
+                position: "absolute",
+                opacity: isDark ? 0 : 1,
+                transform: isDark ? "rotate(-40deg) scale(0.75)" : "rotate(0deg) scale(1)",
+                transition: "opacity 180ms ease, transform 240ms cubic-bezier(0.34, 1.4, 0.64, 1)",
+              }}
+            />
+            <Moon
+              size={13}
+              strokeWidth={2}
+              style={{
+                position: "absolute",
+                opacity: isDark ? 1 : 0,
+                transform: isDark ? "rotate(0deg) scale(1)" : "rotate(40deg) scale(0.75)",
+                transition: "opacity 180ms ease, transform 240ms cubic-bezier(0.34, 1.4, 0.64, 1)",
+              }}
+            />
           </span>
         </button>
       </nav>

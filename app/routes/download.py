@@ -1,17 +1,85 @@
 import io
+import ipaddress
 import os
+import re
 import shutil
+import socket
 import tempfile
-import traceback
+import time
+from collections import defaultdict
 from typing import Optional
+from urllib.parse import urlparse
 
 import yt_dlp
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel, HttpUrl
 
 download_router = APIRouter(prefix="/api", tags=["Download"])
 
 MAX_FILESIZE = 100 * 1024 * 1024  # 100MB limit
+ALLOWED_DOMAINS = (
+    "youtube.com",
+    "youtu.be",
+    "vimeo.com",
+    "tiktok.com",
+)
+RATE_LIMIT_MAX_REQUESTS = 5
+RATE_LIMIT_WINDOW_SECONDS = 600
+_request_timestamps: dict[str, list[float]] = defaultdict(list)
+
+
+def enforce_rate_limit(client_ip: str) -> None:
+    now = time.monotonic()
+    cutoff = now - RATE_LIMIT_WINDOW_SECONDS
+    recent = [ts for ts in _request_timestamps[client_ip] if ts > cutoff]
+    if len(recent) >= RATE_LIMIT_MAX_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many download requests. Please wait a few minutes and try again.",
+        )
+    recent.append(now)
+    _request_timestamps[client_ip] = recent
+
+
+def validate_public_url(raw_url: str) -> None:
+    parsed = urlparse(raw_url)
+    if parsed.scheme.lower() not in ("http", "https") or not parsed.hostname:
+        raise HTTPException(status_code=400, detail="Please enter a full link starting with http(s)://")
+
+    hostname = parsed.hostname.strip().lower()
+    if not any(hostname == d or hostname.endswith("." + d) for d in ALLOWED_DOMAINS):
+        raise HTTPException(
+            status_code=400,
+            detail="Only YouTube, Vimeo, and TikTok links are supported.",
+        )
+
+    if hostname in ("localhost", "localhost.localdomain") or hostname.endswith(".local"):
+        raise HTTPException(status_code=400, detail="Local or internal addresses are not allowed")
+
+    try:
+        addr_infos = socket.getaddrinfo(hostname, parsed.port or 443, type=socket.SOCK_STREAM)
+    except socket.gaierror:
+        raise HTTPException(status_code=400, detail="Could not resolve link hostname")
+
+    if not addr_infos:
+        raise HTTPException(status_code=400, detail="Could not resolve link hostname")
+
+    for info in addr_infos:
+        ip_str = info[4][0]
+        try:
+            ip_obj = ipaddress.ip_address(ip_str)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid link IP address")
+
+        if (
+            ip_obj.is_private
+            or ip_obj.is_loopback
+            or ip_obj.is_link_local
+            or ip_obj.is_multicast
+            or ip_obj.is_reserved
+            or ip_obj.is_unspecified
+        ):
+            raise HTTPException(status_code=400, detail="Private or internal network links are not allowed")
 
 
 class DownloadRequest(BaseModel):
@@ -36,19 +104,22 @@ def friendly_error(raw: str) -> str:
         return 'File is larger than the 100MB limit. Try a lower resolution.'
     if 'unsupported url' in low:
         return 'This link is not supported.'
-    return f'Failed to process link: {raw[:300]}'
+    return 'Failed to process link. Please verify the URL and try again.'
 
 
 @download_router.post("/download-media")
-async def download_media(payload: DownloadRequest):
+async def download_media(payload: DownloadRequest, request: Request):
+    forwarded_for = request.headers.get("x-forwarded-for", "")
+    client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (request.client.host if request.client else "unknown")
+    enforce_rate_limit(client_ip)
+
     url = payload.url.strip()
     media_type = (payload.type or "mp4").strip().lower()
     quality = (payload.quality or "1080").strip()
 
     if not url:
         raise HTTPException(status_code=400, detail="No URL provided")
-    if not url.lower().startswith(('http://', 'https://')):
-        raise HTTPException(status_code=400, detail="Please enter a full link starting with http(s)://")
+    validate_public_url(url)
 
     temp_dir = tempfile.mkdtemp()
 
@@ -69,13 +140,25 @@ async def download_media(payload: DownloadRequest):
             'max_filesize': MAX_FILESIZE,
         }
 
-        raw_cookies = os.environ.get('YOUTUBE_COOKIES', '').strip()
-        if raw_cookies:
-            raw_cookies = raw_cookies.replace('\\n', '\n').replace('\\t', '\t')
+        secret_cookie_paths = (
+            "/etc/secrets/YOUTUBE_COOKIES",
+            "/etc/secrets/cookies.txt",
+            "YOUTUBE_COOKIES",
+        )
+        loaded_cookie_file = next((p for p in secret_cookie_paths if os.path.isfile(p)), None)
+
+        if loaded_cookie_file:
             cookie_path = os.path.join(temp_dir, 'cookies.txt')
-            with open(cookie_path, 'w', encoding='utf-8') as f:
-                f.write(raw_cookies + '\n')
+            shutil.copyfile(loaded_cookie_file, cookie_path)
             base_ydl_opts['cookiefile'] = cookie_path
+        else:
+            raw_cookies = os.environ.get('YOUTUBE_COOKIES', '').strip()
+            if raw_cookies:
+                raw_cookies = raw_cookies.replace('\\n', '\n').replace('\\t', '\t')
+                cookie_path = os.path.join(temp_dir, 'cookies.txt')
+                with open(cookie_path, 'w', encoding='utf-8') as f:
+                    f.write(raw_cookies + '\n')
+                base_ydl_opts['cookiefile'] = cookie_path
 
         if media_type == 'mp3':
             bitrate = quality if quality in ('320', '256', '192', '128') else '192'
@@ -120,7 +203,8 @@ async def download_media(payload: DownloadRequest):
         with open(output_file, 'rb') as f:
             content_bytes = f.read()
 
-        filename = os.path.basename(output_file)
+        raw_filename = os.path.basename(output_file)
+        filename = re.sub(r'[^A-Za-z0-9._-]', '_', raw_filename)
 
         return Response(
             content=content_bytes,
@@ -132,8 +216,7 @@ async def download_media(payload: DownloadRequest):
     except HTTPException:
         raise
     except Exception as e:
-        print('ERROR IN /download-media:')
-        traceback.print_exc()
+        print(f'ERROR IN /download-media: {type(e).__name__}')
         raise HTTPException(status_code=500, detail=friendly_error(str(e)))
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)

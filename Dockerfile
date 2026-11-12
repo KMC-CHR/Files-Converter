@@ -43,4 +43,4 @@ USER appuser
 EXPOSE 8000
 
 # Run FastAPI via Uvicorn with standard workers and 300s timeout for media downloads
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--timeout-keep-alive", "300"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--timeout-keep-alive", "300"]

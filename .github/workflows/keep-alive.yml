@@ -3,7 +3,7 @@ name: Keep Render App Awake
 on:
   schedule:
     # Runs every 14 minutes to keep the Render free web service from sleeping
-    - cron: '*/14 * * * *'
+    - cron: "*/14 * * * *"
   workflow_dispatch: # Allows manual trigger from GitHub Actions tab
 
 permissions:

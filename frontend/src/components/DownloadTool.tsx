@@ -13,6 +13,10 @@ interface DownloadItem {
   status: "idle" | "fetching" | "ready";
 }
 
+interface DownloadToolProps {
+  onBusyChange?: (busy: boolean) => void;
+}
+
 function isValidHttpUrl(rawUrl: string): boolean {
   try {
     const parsed = new URL(rawUrl.trim());
@@ -22,7 +26,7 @@ function isValidHttpUrl(rawUrl: string): boolean {
   }
 }
 
-export const DownloadTool: React.FC = () => {
+export const DownloadTool: React.FC<DownloadToolProps> = ({ onBusyChange }) => {
   const [urlInput, setUrlInput] = useState<string>("");
   const [format, setFormat] = useState<string>(DOWNLOAD_FORMATS[0]);
   const [isFormatOpen, setIsFormatOpen] = useState<boolean>(false);
@@ -31,6 +35,17 @@ export const DownloadTool: React.FC = () => {
   const [downloadError, setDownloadError] = useState<string | null>(null);
 
   const formatRef = useRef<HTMLDivElement>(null);
+  const isDownloadingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    onBusyChange?.(isDownloading);
+  }, [isDownloading, onBusyChange]);
+
+  useEffect(() => {
+    return () => {
+      onBusyChange?.(false);
+    };
+  }, [onBusyChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -44,6 +59,7 @@ export const DownloadTool: React.FC = () => {
 
   const handleFetchMedia = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDownloadingRef.current) return;
     setDownloadError(null);
 
     const trimmedUrl = urlInput.trim();
@@ -67,7 +83,8 @@ export const DownloadTool: React.FC = () => {
   };
 
   const handleDownload = async () => {
-    if (!activeMedia || isDownloading) return;
+    if (!activeMedia || isDownloading || isDownloadingRef.current) return;
+    isDownloadingRef.current = true;
     setIsDownloading(true);
     setDownloadError(null);
 
@@ -90,6 +107,7 @@ export const DownloadTool: React.FC = () => {
     } catch (err: unknown) {
       setDownloadError(err instanceof Error ? err.message : "Download failed.");
     } finally {
+      isDownloadingRef.current = false;
       setIsDownloading(false);
     }
   };
@@ -135,6 +153,7 @@ export const DownloadTool: React.FC = () => {
                 id="media-url-input"
                 type="url"
                 value={urlInput}
+                disabled={isDownloading}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="Paste link from YouTube, Vimeo, or TikTok..."
                 style={{
@@ -152,7 +171,12 @@ export const DownloadTool: React.FC = () => {
                 }}
               />
             </div>
-            <button type="submit" className="btn-primary" style={{ flexShrink: 0 }}>
+            <button
+              type="submit"
+              disabled={isDownloading}
+              className="btn-primary"
+              style={{ flexShrink: 0 }}
+            >
               Fetch Link
             </button>
           </div>
@@ -227,14 +251,16 @@ export const DownloadTool: React.FC = () => {
                     {activeMedia.title}
                   </p>
                   <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
-                    Status: {activeMedia.duration}
+                    Status: {isDownloading ? "Extracting in memory..." : activeMedia.duration}
                   </p>
                 </div>
               </div>
 
               <button
                 type="button"
+                disabled={isDownloading}
                 onClick={() => {
+                  if (isDownloadingRef.current) return;
                   setActiveMedia(null);
                   setDownloadError(null);
                 }}
@@ -243,7 +269,8 @@ export const DownloadTool: React.FC = () => {
                   height: "44px",
                   background: "none",
                   border: "none",
-                  cursor: "pointer",
+                  cursor: isDownloading ? "not-allowed" : "pointer",
+                  opacity: isDownloading ? 0.45 : 1,
                   color: "var(--text-muted)",
                   borderRadius: "var(--radius-sm)",
                   display: "inline-flex",
@@ -294,6 +321,7 @@ export const DownloadTool: React.FC = () => {
                   <button
                     id="download-format-trigger"
                     type="button"
+                    disabled={isDownloading}
                     aria-haspopup="listbox"
                     aria-expanded={isFormatOpen}
                     onClick={() => setIsFormatOpen((prev) => !prev)}
@@ -317,6 +345,7 @@ export const DownloadTool: React.FC = () => {
                   {isFormatOpen && (
                     <div
                       role="listbox"
+                      className="atelier-popover"
                       style={{
                         position: "absolute",
                         bottom: "calc(100% + 6px)",

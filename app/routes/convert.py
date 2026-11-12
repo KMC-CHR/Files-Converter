@@ -3,7 +3,12 @@ import os
 import gc
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Response
 from PIL import Image
-from utils import normalize_image
+from utils import (
+    normalize_image,
+    open_validated_image,
+    read_bounded_upload,
+    safe_download_filename,
+)
 
 convert_router = APIRouter(prefix="/api", tags=["Convert"])
 
@@ -21,8 +26,8 @@ async def convert_single(
     target_fmt = (target_format or format or "png").lower()
 
     try:
-        image_bytes = await file.read()
-        img = Image.open(io.BytesIO(image_bytes))
+        image_bytes = await read_bounded_upload(file)
+        img = open_validated_image(image_bytes)
         img = normalize_image(img)
         output_io = io.BytesIO()
 
@@ -49,8 +54,7 @@ async def convert_single(
         del image_bytes, img
         gc.collect()
 
-        filename_no_ext = os.path.splitext(file.filename)[0]
-        download_name = f"converted_{filename_no_ext}.{ext}"
+        download_name = safe_download_filename(file.filename, "converted_", ext)
 
         return Response(
             content=content_bytes,
@@ -59,6 +63,9 @@ async def convert_single(
                 "Content-Disposition": f'attachment; filename="{download_name}"'
             }
         )
+    except HTTPException:
+        gc.collect()
+        raise
     except Exception as e:
         gc.collect()
         raise HTTPException(status_code=500, detail=f"Image conversion failed: {str(e)}")

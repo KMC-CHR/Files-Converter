@@ -31,7 +31,11 @@ interface FileItem {
   file: File;
   name: string;
   sizeMB: number;
-  status: "ready" | "processing" | "completed" | "error";
+  status: "ready" | "processing" | "completed" | "done-local" | "error";
+}
+
+interface EnhanceToolProps {
+  onBusyChange?: (busy: boolean) => void;
 }
 
 function isSupportedImageFile(file: File): boolean {
@@ -41,7 +45,7 @@ function isSupportedImageFile(file: File): boolean {
   return IMAGE_EXTENSION_REGEX.test(file.name);
 }
 
-export const EnhanceTool: React.FC = () => {
+export const EnhanceTool: React.FC<EnhanceToolProps> = ({ onBusyChange }) => {
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<string>(ENHANCEMENT_PRESETS[0]);
   const [outputFormat, setOutputFormat] = useState<string>(DEFAULT_OUTPUT_FORMAT);
@@ -53,6 +57,18 @@ export const EnhanceTool: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const presetRef = useRef<HTMLDivElement>(null);
   const formatRef = useRef<HTMLDivElement>(null);
+  const dragDepthRef = useRef<number>(0);
+  const isEnhancingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    onBusyChange?.(isEnhancing);
+  }, [isEnhancing, onBusyChange]);
+
+  useEffect(() => {
+    return () => {
+      onBusyChange?.(false);
+    };
+  }, [onBusyChange]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -96,34 +112,61 @@ export const EnhanceTool: React.FC = () => {
     });
   };
 
-  const handleDragOver = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    event.dataTransfer.dropEffect = "copy";
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
+  const addFilesRef = useRef(addFiles);
+  useEffect(() => {
+    addFilesRef.current = addFiles;
+  });
 
-  const handleDragLeave = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const relatedTarget = event.relatedTarget as Node | null;
-    if (relatedTarget && event.currentTarget.contains(relatedTarget)) return;
-    setIsDragging(false);
-  };
+  useEffect(() => {
+    const hasFiles = (e: DragEvent): boolean =>
+      Boolean(e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes("Files"));
 
-  const handleDrop = (event: React.DragEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    event.stopPropagation();
-    setIsDragging(false);
+    const onWindowDragEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current += 1;
+      if (dragDepthRef.current === 1) {
+        setIsDragging(true);
+      }
+    };
 
-    const droppedList = event.dataTransfer.files;
-    if (!droppedList || droppedList.length === 0) return;
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
 
-    const copiedFiles = Array.from(droppedList);
-    addFiles(copiedFiles);
-  };
+    const onWindowDragLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const onWindowDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setIsDragging(false);
+      const droppedList = e.dataTransfer?.files;
+      if (droppedList && droppedList.length > 0) {
+        addFilesRef.current(Array.from(droppedList));
+      }
+    };
+
+    window.addEventListener("dragenter", onWindowDragEnter);
+    window.addEventListener("dragover", onWindowDragOver);
+    window.addEventListener("dragleave", onWindowDragLeave);
+    window.addEventListener("drop", onWindowDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", onWindowDragEnter);
+      window.removeEventListener("dragover", onWindowDragOver);
+      window.removeEventListener("dragleave", onWindowDragLeave);
+      window.removeEventListener("drop", onWindowDrop);
+    };
+  }, []);
 
   const openFilePicker = () => {
     if (fileInputRef.current) {
@@ -133,24 +176,33 @@ export const EnhanceTool: React.FC = () => {
   };
 
   const handleEnhanceAll = async () => {
-    if (files.length === 0 || isEnhancing) return;
+    if (files.length === 0 || isEnhancing || isEnhancingRef.current) return;
+    isEnhancingRef.current = true;
     setIsEnhancing(true);
 
     const mode = getModeKey(selectedPreset);
 
-    for (const item of files) {
-      if (item.status === "completed") continue;
-      setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: "processing" } : f)));
+    try {
+      for (const item of files) {
+        if (item.status === "completed" || item.status === "done-local") continue;
+        setFiles((prev) =>
+          prev.map((f) => (f.id === item.id ? { ...f, status: "processing" } : f)),
+        );
 
-      try {
-        await enhanceImage(item.file, { mode, factor: 1.0 });
-        setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: "completed" } : f)));
-      } catch {
-        setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: "error" } : f)));
+        try {
+          const source = await enhanceImage(item.file, { mode, factor: 1.0 });
+          const nextStatus = source === "local" ? "done-local" : "completed";
+          setFiles((prev) =>
+            prev.map((f) => (f.id === item.id ? { ...f, status: nextStatus } : f)),
+          );
+        } catch {
+          setFiles((prev) => prev.map((f) => (f.id === item.id ? { ...f, status: "error" } : f)));
+        }
       }
+    } finally {
+      isEnhancingRef.current = false;
+      setIsEnhancing(false);
     }
-
-    setIsEnhancing(false);
   };
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -179,9 +231,6 @@ export const EnhanceTool: React.FC = () => {
         <div
           className={`atelier-dropzone ${isDragging ? "dragging" : ""}`}
           onClick={openFilePicker}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -204,7 +253,9 @@ export const EnhanceTool: React.FC = () => {
             }}
           >
             <h3 className="atelier-drop-title">
-              {isDragging ? "Release to add images" : "Drop images to balance tone and clarity"}
+              {isDragging
+                ? "Release anywhere to add images"
+                : "Drop images to balance tone and clarity"}
             </h3>
             <p className="atelier-drop-hint">
               Enhance up to {MAXIMUM_FILES_LIMIT} images at once with crisp detail and natural color
@@ -225,9 +276,6 @@ export const EnhanceTool: React.FC = () => {
       ) : (
         <div
           className="queue-wrapper"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           style={
             isDragging
               ? {
@@ -259,7 +307,7 @@ export const EnhanceTool: React.FC = () => {
                 {files.length}/{MAXIMUM_FILES_LIMIT} Image{files.length !== 1 ? "s" : ""} Ready
               </h2>
               <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
-                Total batch size: {totalMB} MB {isDragging ? "• Release to add more" : ""}
+                Total batch size: {totalMB} MB {isDragging ? "• Release anywhere to add more" : ""}
               </p>
             </div>
 
@@ -267,7 +315,7 @@ export const EnhanceTool: React.FC = () => {
               <button
                 type="button"
                 onClick={openFilePicker}
-                disabled={isAtCapacity}
+                disabled={isAtCapacity || isEnhancing}
                 className="btn-secondary"
                 style={{
                   width: "44px",
@@ -283,7 +331,10 @@ export const EnhanceTool: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setFiles([])}
+                onClick={() => {
+                  if (!isEnhancingRef.current) setFiles([]);
+                }}
+                disabled={isEnhancing}
                 className="btn-secondary"
                 style={{
                   width: "44px",
@@ -326,6 +377,7 @@ export const EnhanceTool: React.FC = () => {
             <button
               id="enhance-preset-trigger"
               type="button"
+              disabled={isEnhancing}
               aria-haspopup="listbox"
               aria-expanded={isPresetOpen}
               onClick={() => setIsPresetOpen((prev) => !prev)}
@@ -354,6 +406,7 @@ export const EnhanceTool: React.FC = () => {
             {isPresetOpen && (
               <div
                 role="listbox"
+                className="atelier-popover from-top"
                 style={{
                   position: "absolute",
                   zIndex: 30,
@@ -448,6 +501,11 @@ export const EnhanceTool: React.FC = () => {
                       <CheckCircle2 size={13} strokeWidth={1.75} className="shrink-0" />
                       Done
                     </span>
+                  ) : file.status === "done-local" ? (
+                    <span className="status-pill completed">
+                      <CheckCircle2 size={13} strokeWidth={1.75} className="shrink-0" />
+                      Done (Local)
+                    </span>
                   ) : file.status === "error" ? (
                     <span className="status-pill error">Failed</span>
                   ) : (
@@ -456,7 +514,12 @@ export const EnhanceTool: React.FC = () => {
 
                   <button
                     type="button"
-                    onClick={() => setFiles((prev) => prev.filter((item) => item.id !== file.id))}
+                    disabled={isEnhancing}
+                    onClick={() => {
+                      if (!isEnhancingRef.current) {
+                        setFiles((prev) => prev.filter((item) => item.id !== file.id));
+                      }
+                    }}
                     style={{
                       width: "44px",
                       height: "44px",
@@ -467,7 +530,8 @@ export const EnhanceTool: React.FC = () => {
                       background: "transparent",
                       color: "var(--text-muted)",
                       borderRadius: "var(--radius-sm)",
-                      cursor: "pointer",
+                      cursor: isEnhancing ? "not-allowed" : "pointer",
+                      opacity: isEnhancing ? 0.45 : 1,
                     }}
                     aria-label={`Remove ${file.name}`}
                     title={`Remove ${file.name}`}
@@ -514,6 +578,7 @@ export const EnhanceTool: React.FC = () => {
                 <button
                   id="enhance-format-trigger"
                   type="button"
+                  disabled={isEnhancing}
                   aria-haspopup="listbox"
                   aria-expanded={isFormatOpen}
                   onClick={() => setIsFormatOpen((prev) => !prev)}
@@ -537,6 +602,7 @@ export const EnhanceTool: React.FC = () => {
                 {isFormatOpen && (
                   <div
                     role="listbox"
+                    className="atelier-popover"
                     style={{
                       position: "absolute",
                       bottom: "calc(100% + 6px)",

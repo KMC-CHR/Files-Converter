@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>FileCraft</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="alternate icon" type="image/png" href="/favicon.png" />
@@ -16,7 +17,7 @@
         document.documentElement.setAttribute("data-theme", "light");
       }
     </script>
-    <!-- Matching canvas color until index.css loads (driven by the attribute, so toggling stays in sync) -->
+    <!-- Matching canvas color and instant responsive boot skeleton until index.css and React load -->
     <style>
       html {
         background-color: #fbfaf5;
@@ -24,6 +25,225 @@
 
       html[data-theme="dark"] {
         background-color: #0d0d0d;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      @keyframes fc-boot-shimmer {
+        0% {
+          background-position: 200% 0;
+        }
+
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      /* 8px base spacing scale: 8px (0.5rem), 16px (1rem), 24px (1.5rem), 32px (2rem) */
+      .fc-boot-shell {
+        --boot-card: #ffffff;
+        --boot-border: rgba(24, 24, 23, 0.09);
+        --boot-base: rgba(24, 24, 23, 0.06);
+        --boot-shine: rgba(24, 24, 23, 0.12);
+        --sp-1: 8px;
+        --sp-2: 16px;
+        --sp-3: 24px;
+        --sp-4: 32px;
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: var(--sp-2) var(--sp-2) var(--sp-4);
+        box-sizing: border-box;
+      }
+
+      html[data-theme="dark"] .fc-boot-shell {
+        --boot-card: #161615;
+        --boot-border: rgba(255, 255, 252, 0.09);
+        --boot-base: rgba(255, 255, 252, 0.07);
+        --boot-shine: rgba(255, 255, 252, 0.14);
+      }
+
+      .fc-boot-shimmer {
+        background: linear-gradient(
+          90deg,
+          var(--boot-base) 25%,
+          var(--boot-shine) 50%,
+          var(--boot-base) 75%
+        );
+        background-size: 200% 100%;
+        animation: fc-boot-shimmer 1.4s ease-in-out infinite;
+        border-radius: var(--sp-1);
+      }
+
+      .fc-boot-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--sp-2);
+        padding: var(--sp-1) 0 var(--sp-3);
+      }
+
+      .fc-boot-brand {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+      }
+
+      .fc-boot-mark {
+        width: var(--sp-4);
+        height: var(--sp-4);
+      }
+
+      .fc-boot-logo {
+        width: 96px;
+        height: 24px;
+      }
+
+      .fc-boot-actions {
+        display: flex;
+        align-items: center;
+        gap: var(--sp-2);
+      }
+
+      .fc-boot-faq {
+        width: var(--sp-4);
+        height: var(--sp-2);
+      }
+
+      .fc-boot-toggle {
+        width: 64px;
+        height: var(--sp-4);
+      }
+
+      /* Outer section gap (16px mobile, 24px tablet+) >= inner card padding */
+      .fc-boot-workspace {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-2);
+      }
+
+      .fc-boot-card {
+        background-color: var(--boot-card);
+        border: 1px solid var(--boot-border);
+        border-radius: var(--sp-2);
+        padding: var(--sp-2);
+        box-sizing: border-box;
+      }
+
+      .fc-boot-rail-eyebrow {
+        display: none;
+        width: 112px;
+        height: var(--sp-1);
+        margin-bottom: var(--sp-2);
+      }
+
+      /* Phone default: 2 columns x 3 rows on 8px grid */
+      .fc-boot-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--sp-1);
+      }
+
+      .fc-boot-tab {
+        height: 48px;
+        padding: 0 var(--sp-1);
+        display: flex;
+        align-items: center;
+        gap: var(--sp-1);
+        border-radius: var(--sp-1);
+        box-sizing: border-box;
+      }
+
+      .fc-boot-tab-active {
+        border: 1px solid var(--boot-border);
+      }
+
+      .fc-boot-tab-icon {
+        width: var(--sp-3);
+        height: var(--sp-3);
+        flex-shrink: 0;
+      }
+
+      .fc-boot-tab-label {
+        height: var(--sp-1);
+        width: 64%;
+      }
+
+      /* Proximity grouping: tight 8px heading stack, 24px separation before dropzone */
+      .fc-boot-heading-group {
+        display: flex;
+        flex-direction: column;
+        gap: var(--sp-1);
+        margin-bottom: var(--sp-3);
+      }
+
+      .fc-boot-title {
+        width: 64%;
+        max-width: 240px;
+        height: var(--sp-3);
+      }
+
+      .fc-boot-subtitle {
+        width: 88%;
+        max-width: 336px;
+        height: var(--sp-2);
+      }
+
+      .fc-boot-dropzone {
+        width: 100%;
+        height: 240px;
+        border-radius: var(--sp-2);
+      }
+
+      /* Tablets (768px - 1079px): 24px outer margins, 24px card padding, 3x2 grid */
+      @media (min-width: 768px) {
+        .fc-boot-shell {
+          padding: var(--sp-3) var(--sp-3) var(--sp-4);
+        }
+
+        .fc-boot-workspace {
+          gap: var(--sp-3);
+        }
+
+        .fc-boot-card {
+          padding: var(--sp-3);
+        }
+
+        .fc-boot-rail-eyebrow {
+          display: block;
+        }
+
+        .fc-boot-grid {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: var(--sp-2);
+        }
+      }
+
+      /* Desktop (>= 1080px): 264px rail (33 * 8px) + fluid main workspace */
+      @media (min-width: 1080px) {
+        .fc-boot-workspace {
+          display: grid;
+          grid-template-columns: 264px minmax(0, 1fr);
+          align-items: start;
+          gap: var(--sp-3);
+        }
+
+        .fc-boot-grid {
+          grid-template-columns: 1fr;
+          gap: var(--sp-1);
+        }
+
+        .fc-boot-dropzone {
+          height: 280px;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .fc-boot-shimmer {
+          animation: none;
+        }
       }
     </style>
 
@@ -37,7 +257,60 @@
   </head>
 
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div class="fc-boot-shell" aria-busy="true" aria-label="Loading FileCraft workspace">
+        <div class="fc-boot-header">
+          <div class="fc-boot-brand">
+            <div class="fc-boot-shimmer fc-boot-mark"></div>
+            <div class="fc-boot-shimmer fc-boot-logo"></div>
+          </div>
+          <div class="fc-boot-actions">
+            <div class="fc-boot-shimmer fc-boot-faq"></div>
+            <div class="fc-boot-shimmer fc-boot-toggle"></div>
+          </div>
+        </div>
+
+        <div class="fc-boot-workspace">
+          <div class="fc-boot-card">
+            <div class="fc-boot-shimmer fc-boot-rail-eyebrow"></div>
+            <div class="fc-boot-grid">
+              <div class="fc-boot-tab fc-boot-tab-active">
+                <div class="fc-boot-shimmer fc-boot-tab-icon"></div>
+                <div class="fc-boot-shimmer fc-boot-tab-label" style="width: 52%"></div>
+              </div>
+              <div class="fc-boot-tab">
+                <div class="fc-boot-shimmer fc-boot-tab-icon"></div>
+                <div class="fc-boot-shimmer fc-boot-tab-label" style="width: 64%"></div>
+              </div>
+              <div class="fc-boot-tab">
+                <div class="fc-boot-shimmer fc-boot-tab-icon"></div>
+                <div class="fc-boot-shimmer fc-boot-tab-label" style="width: 72%"></div>
+              </div>
+              <div class="fc-boot-tab">
+                <div class="fc-boot-shimmer fc-boot-tab-icon"></div>
+                <div class="fc-boot-shimmer fc-boot-tab-label" style="width: 64%"></div>
+              </div>
+              <div class="fc-boot-tab">
+                <div class="fc-boot-shimmer fc-boot-tab-icon"></div>
+                <div class="fc-boot-shimmer fc-boot-tab-label" style="width: 56%"></div>
+              </div>
+              <div class="fc-boot-tab">
+                <div class="fc-boot-shimmer fc-boot-tab-icon"></div>
+                <div class="fc-boot-shimmer fc-boot-tab-label" style="width: 72%"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="fc-boot-card">
+            <div class="fc-boot-heading-group">
+              <div class="fc-boot-shimmer fc-boot-title"></div>
+              <div class="fc-boot-shimmer fc-boot-subtitle"></div>
+            </div>
+            <div class="fc-boot-shimmer fc-boot-dropzone"></div>
+          </div>
+        </div>
+      </div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

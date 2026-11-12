@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FileUp,
   Scaling,
@@ -8,6 +8,7 @@ import {
   Image as ImageIcon,
   RefreshCw,
   CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
 import { upscaleImage } from "../api/client";
 import type { TargetFormat } from "../types";
@@ -17,6 +18,7 @@ type AlgorithmOption = "lanczos" | "bicubic" | "bilinear";
 
 const MAXIMUM_FILES_LIMIT = 10;
 const IMAGE_EXTENSION_REGEX = /\.(png|jpe?g|webp|gif|bmp|tiff?|avif)$/i;
+const UPSCALE_FORMATS: TargetFormat[] = ["png", "jpg", "webp"];
 
 interface QueueItem {
   id: string;
@@ -24,7 +26,11 @@ interface QueueItem {
   resolution: ResolutionOption;
   algorithm: AlgorithmOption;
   format: TargetFormat;
-  status: "ready" | "processing" | "done" | "error";
+  status: "ready" | "processing" | "done" | "done-local" | "error";
+}
+
+interface UpscaleToolProps {
+  onBusyChange?: (busy: boolean) => void;
 }
 
 function isSupportedImageFile(file: File): boolean {
@@ -34,15 +40,39 @@ function isSupportedImageFile(file: File): boolean {
   return IMAGE_EXTENSION_REGEX.test(file.name);
 }
 
-export const UpscaleTool = () => {
+export const UpscaleTool: React.FC<UpscaleToolProps> = ({ onBusyChange }) => {
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [globalResolution, setGlobalResolution] = useState<ResolutionOption>("1080p");
   const [globalAlgorithm, setGlobalAlgorithm] = useState<AlgorithmOption>("lanczos");
   const [globalFormat, setGlobalFormat] = useState<TargetFormat>("png");
+  const [isFormatOpen, setIsFormatOpen] = useState<boolean>(false);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const formatRef = useRef<HTMLDivElement>(null);
+  const dragDepthRef = useRef<number>(0);
+  const isProcessingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    onBusyChange?.(isProcessing);
+  }, [isProcessing, onBusyChange]);
+
+  useEffect(() => {
+    return () => {
+      onBusyChange?.(false);
+    };
+  }, [onBusyChange]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (formatRef.current && !formatRef.current.contains(event.target as Node)) {
+        setIsFormatOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const addFiles = (incomingFiles: File[]) => {
     const imageFiles = incomingFiles.filter(isSupportedImageFile);
@@ -65,6 +95,62 @@ export const UpscaleTool = () => {
     });
   };
 
+  const addFilesRef = useRef(addFiles);
+  useEffect(() => {
+    addFilesRef.current = addFiles;
+  });
+
+  useEffect(() => {
+    const hasFiles = (e: DragEvent): boolean =>
+      Boolean(e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes("Files"));
+
+    const onWindowDragEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current += 1;
+      if (dragDepthRef.current === 1) {
+        setIsDragging(true);
+      }
+    };
+
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
+
+    const onWindowDragLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const onWindowDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setIsDragging(false);
+      const droppedList = e.dataTransfer?.files;
+      if (droppedList && droppedList.length > 0) {
+        addFilesRef.current(Array.from(droppedList));
+      }
+    };
+
+    window.addEventListener("dragenter", onWindowDragEnter);
+    window.addEventListener("dragover", onWindowDragOver);
+    window.addEventListener("dragleave", onWindowDragLeave);
+    window.addEventListener("drop", onWindowDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", onWindowDragEnter);
+      window.removeEventListener("dragover", onWindowDragOver);
+      window.removeEventListener("dragleave", onWindowDragLeave);
+      window.removeEventListener("drop", onWindowDrop);
+    };
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedList = e.target.files;
     if (selectedList && selectedList.length > 0) {
@@ -72,35 +158,6 @@ export const UpscaleTool = () => {
       addFiles(copiedFiles);
     }
     e.target.value = "";
-  };
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "copy";
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
-
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const relatedTarget = e.relatedTarget as Node | null;
-    if (relatedTarget && e.currentTarget.contains(relatedTarget)) return;
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-
-    const droppedList = e.dataTransfer.files;
-    if (!droppedList || droppedList.length === 0) return;
-
-    const copiedFiles = Array.from(droppedList);
-    addFiles(copiedFiles);
   };
 
   const openFilePicker = () => {
@@ -126,10 +183,12 @@ export const UpscaleTool = () => {
   };
 
   const removeItem = (id: string) => {
+    if (isProcessingRef.current) return;
     setQueue((prev) => prev.filter((item) => item.id !== id));
   };
 
   const clearQueue = () => {
+    if (isProcessingRef.current) return;
     setQueue([]);
   };
 
@@ -139,26 +198,35 @@ export const UpscaleTool = () => {
   };
 
   const processQueue = async () => {
-    if (queue.length === 0 || isProcessing) return;
+    if (queue.length === 0 || isProcessing || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setIsProcessing(true);
 
-    for (const item of queue) {
-      if (item.status === "done") continue;
+    try {
+      for (const item of queue) {
+        if (item.status === "done" || item.status === "done-local") continue;
 
-      setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "processing" } : i)));
+        setQueue((prev) =>
+          prev.map((i) => (i.id === item.id ? { ...i, status: "processing" } : i)),
+        );
 
-      try {
-        await upscaleImage(item.file, {
-          target_res: item.resolution,
-          filter: item.algorithm,
-        });
-        setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "done" } : i)));
-      } catch {
-        setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "error" } : i)));
+        try {
+          const source = await upscaleImage(item.file, {
+            target_res: item.resolution,
+            filter: item.algorithm,
+          });
+          const nextStatus = source === "local" ? "done-local" : "done";
+          setQueue((prev) =>
+            prev.map((i) => (i.id === item.id ? { ...i, status: nextStatus } : i)),
+          );
+        } catch {
+          setQueue((prev) => prev.map((i) => (i.id === item.id ? { ...i, status: "error" } : i)));
+        }
       }
+    } finally {
+      isProcessingRef.current = false;
+      setIsProcessing(false);
     }
-
-    setIsProcessing(false);
   };
 
   const isAtCapacity = queue.length >= MAXIMUM_FILES_LIMIT;
@@ -178,9 +246,6 @@ export const UpscaleTool = () => {
         <div
           className={`atelier-dropzone ${isDragging ? "dragging" : ""}`}
           onClick={openFilePicker}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -202,7 +267,7 @@ export const UpscaleTool = () => {
             }}
           >
             <h3 className="atelier-drop-title">
-              {isDragging ? "Release to add images" : "Drop images to enlarge cleanly"}
+              {isDragging ? "Release anywhere to add images" : "Drop images to enlarge cleanly"}
             </h3>
             <p className="atelier-drop-hint">
               Enlarge up to {MAXIMUM_FILES_LIMIT} images at once while keeping edges crisp (up to
@@ -223,9 +288,6 @@ export const UpscaleTool = () => {
       ) : (
         <div
           className="queue-wrapper"
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
           style={
             isDragging
               ? {
@@ -258,7 +320,7 @@ export const UpscaleTool = () => {
               </h2>
               <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
                 Total batch size: {calculateTotalSize()} MB{" "}
-                {isDragging ? "• Release to add more" : ""}
+                {isDragging ? "• Release anywhere to add more" : ""}
               </p>
             </div>
 
@@ -266,7 +328,7 @@ export const UpscaleTool = () => {
               <button
                 type="button"
                 onClick={openFilePicker}
-                disabled={isAtCapacity}
+                disabled={isAtCapacity || isProcessing}
                 className="btn-secondary"
                 style={{
                   width: "44px",
@@ -283,6 +345,7 @@ export const UpscaleTool = () => {
               <button
                 type="button"
                 onClick={clearQueue}
+                disabled={isProcessing}
                 className="btn-secondary"
                 style={{
                   width: "44px",
@@ -324,6 +387,7 @@ export const UpscaleTool = () => {
                 id="upscale-res-select"
                 className="native-styled-select"
                 value={globalResolution}
+                disabled={isProcessing}
                 onChange={(e) => handleGlobalResolutionChange(e.target.value as ResolutionOption)}
                 style={{ width: "100%" }}
               >
@@ -351,6 +415,7 @@ export const UpscaleTool = () => {
                 id="upscale-alg-select"
                 className="native-styled-select"
                 value={globalAlgorithm}
+                disabled={isProcessing}
                 onChange={(e) => handleGlobalAlgorithmChange(e.target.value as AlgorithmOption)}
                 style={{ width: "100%" }}
               >
@@ -401,7 +466,6 @@ export const UpscaleTool = () => {
                     display: "flex",
                     gap: "0.625rem",
                     alignItems: "center",
-                    flexWrap: "wrap",
                   }}
                 >
                   {item.status === "processing" ? (
@@ -414,32 +478,21 @@ export const UpscaleTool = () => {
                       <CheckCircle2 size={13} strokeWidth={1.75} className="shrink-0" />
                       Done
                     </span>
+                  ) : item.status === "done-local" ? (
+                    <span className="status-pill completed">
+                      <CheckCircle2 size={13} strokeWidth={1.75} className="shrink-0" />
+                      Done (Local)
+                    </span>
                   ) : item.status === "error" ? (
                     <span className="status-pill error">Failed</span>
                   ) : (
                     <span className="status-pill">Ready</span>
                   )}
 
-                  <select
-                    aria-label={`Format for ${item.file.name}`}
-                    className="native-styled-select"
-                    style={{ minHeight: "38px", fontSize: "0.8125rem" }}
-                    value={item.format}
-                    onChange={(e) => {
-                      const fmt = e.target.value as TargetFormat;
-                      setQueue((prev) =>
-                        prev.map((i) => (i.id === item.id ? { ...i, format: fmt } : i)),
-                      );
-                    }}
-                  >
-                    <option value="png">PNG</option>
-                    <option value="jpg">JPG</option>
-                    <option value="webp">WEBP</option>
-                  </select>
-
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
+                    disabled={isProcessing}
                     style={{
                       width: "44px",
                       height: "44px",
@@ -448,7 +501,8 @@ export const UpscaleTool = () => {
                       justifyContent: "center",
                       background: "none",
                       border: "none",
-                      cursor: "pointer",
+                      cursor: isProcessing ? "not-allowed" : "pointer",
+                      opacity: isProcessing ? 0.45 : 1,
                       color: "var(--text-muted)",
                       borderRadius: "var(--radius-sm)",
                     }}
@@ -472,23 +526,105 @@ export const UpscaleTool = () => {
               gap: "1rem",
             }}
           >
-            <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.75rem",
+                position: "relative",
+              }}
+              ref={formatRef}
+            >
               <label
-                htmlFor="upscale-global-format"
-                style={{ fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)" }}
+                htmlFor="upscale-format-trigger"
+                style={{
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  color: "var(--text-secondary)",
+                  whiteSpace: "nowrap",
+                }}
               >
                 Save all as:
               </label>
-              <select
-                id="upscale-global-format"
-                className="native-styled-select"
-                value={globalFormat}
-                onChange={(e) => handleGlobalFormatChange(e.target.value as TargetFormat)}
-              >
-                <option value="png">PNG</option>
-                <option value="jpg">JPG</option>
-                <option value="webp">WEBP</option>
-              </select>
+
+              <div style={{ position: "relative" }}>
+                <button
+                  id="upscale-format-trigger"
+                  type="button"
+                  disabled={isProcessing}
+                  aria-haspopup="listbox"
+                  aria-expanded={isFormatOpen}
+                  onClick={() => setIsFormatOpen((prev) => !prev)}
+                  className="btn-secondary"
+                  style={{
+                    width: "7.5rem",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 0.875rem",
+                  }}
+                >
+                  <span>{globalFormat.toUpperCase()}</span>
+                  <ChevronDown
+                    size={16}
+                    strokeWidth={1.75}
+                    style={{ color: "var(--text-muted)" }}
+                  />
+                </button>
+
+                {isFormatOpen && (
+                  <div
+                    role="listbox"
+                    className="atelier-popover"
+                    style={{
+                      position: "absolute",
+                      bottom: "calc(100% + 6px)",
+                      left: 0,
+                      width: "7.5rem",
+                      backgroundColor: "var(--bg-card)",
+                      border: "1px solid var(--border-strong)",
+                      borderRadius: "var(--radius-md)",
+                      boxShadow: "var(--shadow-card)",
+                      zIndex: 30,
+                      overflow: "hidden",
+                      padding: "0.25rem",
+                    }}
+                  >
+                    {UPSCALE_FORMATS.map((fmt) => {
+                      const isSelected = globalFormat === fmt;
+                      return (
+                        <button
+                          key={fmt}
+                          type="button"
+                          role="option"
+                          aria-selected={isSelected}
+                          onClick={() => {
+                            handleGlobalFormatChange(fmt);
+                            setIsFormatOpen(false);
+                          }}
+                          style={{
+                            width: "100%",
+                            minHeight: "40px",
+                            textAlign: "left",
+                            padding: "0 0.75rem",
+                            borderRadius: "var(--radius-sm)",
+                            border: "none",
+                            backgroundColor: isSelected
+                              ? "var(--accent-amber-soft)"
+                              : "transparent",
+                            color: isSelected ? "var(--accent-amber)" : "var(--text-primary)",
+                            fontSize: "0.875rem",
+                            fontWeight: isSelected ? 700 : 500,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {fmt.toUpperCase()}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <button

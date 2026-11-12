@@ -1,502 +1,685 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" data-theme="light">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>OmniShift — Free Online Image & Media Processing Workspace</title>
-    
+
     <!-- Satoshi & Poppins Fonts -->
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@700,800,900&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
+    <link
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@700,800,900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}">
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
-</head>
-<body>
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='Style.css') }}" />
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}" />
+  </head>
+  <body>
     <div class="workspace-container">
-        
-        <!-- Header -->
-        <header class="app-header">
-            <a href="/" class="brand-link">
-                <div class="brand-icon">
-                    <i data-lucide="layers"></i>
-                </div>
-                <span class="brand-name">OmniShift</span>
-            </a>
-            <nav class="nav-menu">
-                <a href="#faq" class="nav-link">
-                    <i data-lucide="help-circle"></i>
-                    <span>FAQ</span>
-                </a>
-            </nav>
-        </header>
+      <!-- Header -->
+      <header class="app-header">
+        <a href="/" class="brand-link">
+          <div class="brand-icon">
+            <i data-lucide="layers"></i>
+          </div>
+          <span class="brand-name">OmniShift</span>
+        </a>
+        <nav class="nav-menu">
+          <a href="#faq" class="nav-link">
+            <i data-lucide="help-circle"></i>
+            <span>FAQ</span>
+          </a>
+        </nav>
+      </header>
 
-        <!-- Main Tab Workspace -->
-        <main class="tab-container">
-            
-            <!-- Tab Navigation Bar -->
-            <div class="tab-bar">
-                <button class="tab-btn active" onclick="switchTab('convert', event)">
-                    <i data-lucide="repeat"></i>
-                    <span>Convert</span>
+      <!-- Main Tab Workspace -->
+      <main class="tab-container">
+        <!-- Tab Navigation Bar -->
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab('convert', event)">
+            <i data-lucide="repeat"></i>
+            <span>Convert</span>
+          </button>
+          <button class="tab-btn" onclick="switchTab('upscale', event)">
+            <i data-lucide="scaling"></i>
+            <span>Standard Upscale</span>
+          </button>
+          <button class="tab-btn" onclick="switchTab('ai-upscale', event)">
+            <i data-lucide="sparkles"></i>
+            <span>AI Super-Res</span>
+          </button>
+          <button class="tab-btn" onclick="switchTab('enhance', event)">
+            <i data-lucide="sliders"></i>
+            <span>Enhance</span>
+          </button>
+          <button class="tab-btn" onclick="switchTab('video-download', event)">
+            <i data-lucide="video"></i>
+            <span>Link Downloader</span>
+          </button>
+        </div>
+
+        <!-- TAB 1: CONVERT PANEL -->
+        <div id="panel-convert" class="tab-panel active">
+          <div
+            class="empty-state"
+            id="drop-zone-convert"
+            onclick="document.getElementById('file-input-convert').click()"
+          >
+            <div class="upload-icon-wrapper"><i data-lucide="file-up"></i></div>
+            <h3 class="upload-title">Drop files here, or click to browse</h3>
+            <p class="upload-hint">PNG, JPG, WEBP, HEIC, HEIF, PDF • Up to 15MB per file</p>
+            <button class="btn-primary-lg" type="button">Choose Files</button>
+            <input
+              type="file"
+              id="file-input-convert"
+              multiple
+              style="display: none"
+              onchange="addFilesToQueue(this.files, 'convert')"
+            />
+          </div>
+
+          <div id="queue-container-convert" class="queue-container" style="display: none">
+            <div class="queue-header">
+              <span id="queue-summary-convert" class="queue-summary">0 File(s) • 0.00 MB</span>
+              <div class="queue-header-actions">
+                <button
+                  class="btn-icon"
+                  title="Add More Files"
+                  onclick="document.getElementById('file-input-convert-more').click()"
+                >
+                  <i data-lucide="plus"></i>
                 </button>
-                <button class="tab-btn" onclick="switchTab('upscale', event)">
-                    <i data-lucide="scaling"></i>
-                    <span>Standard Upscale</span>
+                <button class="btn-icon" title="Clear Queue" onclick="clearQueue('convert')">
+                  <i data-lucide="trash-2"></i>
                 </button>
-                <button class="tab-btn" onclick="switchTab('ai-upscale', event)">
-                    <i data-lucide="sparkles"></i>
-                    <span>AI Super-Res</span>
+                <input
+                  type="file"
+                  id="file-input-convert-more"
+                  multiple
+                  style="display: none"
+                  onchange="addFilesToQueue(this.files, 'convert')"
+                />
+              </div>
+            </div>
+            <div id="file-list-convert" class="file-list-items"></div>
+            <div class="queue-footer">
+              <div class="batch-controls">
+                <span class="batch-label">Convert All To:</span>
+                <select
+                  id="batch-format-convert"
+                  class="native-styled-select select-compact"
+                  onchange="updateAllFormats('convert', this.value)"
+                >
+                  <option value="webp" selected>WEBP</option>
+                  <option value="png">PNG</option>
+                  <option value="jpg">JPG</option>
+                </select>
+              </div>
+              <button
+                id="btn-process-convert"
+                class="btn-primary-action"
+                onclick="processBatch('convert')"
+              >
+                <span>Convert All</span><i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: STANDARD UPSCALE PANEL -->
+        <div id="panel-upscale" class="tab-panel">
+          <div
+            class="empty-state"
+            id="drop-zone-upscale"
+            onclick="document.getElementById('file-input-upscale').click()"
+          >
+            <div class="upload-icon-wrapper"><i data-lucide="maximize-2"></i></div>
+            <h3 class="upload-title">Drop files here for Standard Upscaling</h3>
+            <p class="upload-hint">Fast mathematical Lanczos pixel resampling</p>
+            <button class="btn-primary-lg" type="button">Choose Files</button>
+            <input
+              type="file"
+              id="file-input-upscale"
+              multiple
+              style="display: none"
+              onchange="addFilesToQueue(this.files, 'upscale')"
+            />
+          </div>
+
+          <div id="queue-container-upscale" class="queue-container" style="display: none">
+            <div class="queue-header">
+              <span id="queue-summary-upscale" class="queue-summary">0 File(s) • 0.00 MB</span>
+              <div class="queue-header-actions">
+                <button
+                  class="btn-icon"
+                  title="Add More Files"
+                  onclick="document.getElementById('file-input-upscale-more').click()"
+                >
+                  <i data-lucide="plus"></i>
                 </button>
-                <button class="tab-btn" onclick="switchTab('enhance', event)">
-                    <i data-lucide="sliders"></i>
-                    <span>Enhance</span>
+                <button class="btn-icon" title="Clear Queue" onclick="clearQueue('upscale')">
+                  <i data-lucide="trash-2"></i>
                 </button>
-                <button class="tab-btn" onclick="switchTab('video-download', event)">
-                    <i data-lucide="video"></i>
-                    <span>Link Downloader</span>
+                <input
+                  type="file"
+                  id="file-input-upscale-more"
+                  multiple
+                  style="display: none"
+                  onchange="addFilesToQueue(this.files, 'upscale')"
+                />
+              </div>
+            </div>
+
+            <div class="global-tab-settings">
+              <div class="control-group">
+                <label for="target-res">Target Resolution</label>
+                <select id="target-res" class="native-styled-select">
+                  <option value="720p">720p (HD)</option>
+                  <option value="1080p" selected>1080p (Full HD)</option>
+                  <option value="1440p">1440p (2K)</option>
+                  <option value="2160p">2160p (4K)</option>
+                </select>
+              </div>
+              <div class="control-group">
+                <label for="resample-filter">Algorithm</label>
+                <select id="resample-filter" class="native-styled-select">
+                  <option value="lanczos" selected>Lanczos (Sharp)</option>
+                  <option value="bicubic">Bicubic (Smooth)</option>
+                  <option value="bilinear">Bilinear (Fast)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="file-list-upscale" class="file-list-items"></div>
+            <div class="queue-footer">
+              <div class="batch-controls">
+                <span class="batch-label">Output Format:</span>
+                <select
+                  id="batch-format-upscale"
+                  class="native-styled-select select-compact"
+                  onchange="updateAllFormats('upscale', this.value)"
+                >
+                  <option value="png" selected>PNG</option>
+                  <option value="jpg">JPG</option>
+                  <option value="webp">WEBP</option>
+                </select>
+              </div>
+              <button
+                id="btn-process-upscale"
+                class="btn-primary-action"
+                onclick="processBatch('upscale')"
+              >
+                <span>Upscale All</span><i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: AI SUPER-RESOLUTION PANEL -->
+        <div id="panel-ai-upscale" class="tab-panel">
+          <div
+            class="empty-state"
+            id="drop-zone-ai-upscale"
+            onclick="document.getElementById('file-input-ai-upscale').click()"
+          >
+            <div class="upload-icon-wrapper"><i data-lucide="sparkles"></i></div>
+            <h3 class="upload-title">Drop files here for AI Super-Resolution</h3>
+            <p class="upload-hint">Reconstructs missing details & keeps transparent edges sharp</p>
+            <button class="btn-primary-lg" type="button">Choose Files</button>
+            <input
+              type="file"
+              id="file-input-ai-upscale"
+              multiple
+              style="display: none"
+              onchange="addFilesToQueue(this.files, 'ai-upscale')"
+            />
+          </div>
+
+          <div id="queue-container-ai-upscale" class="queue-container" style="display: none">
+            <div class="queue-header">
+              <span id="queue-summary-ai-upscale" class="queue-summary">0 File(s) • 0.00 MB</span>
+              <div class="queue-header-actions">
+                <button
+                  class="btn-icon"
+                  title="Add More Files"
+                  onclick="document.getElementById('file-input-ai-more').click()"
+                >
+                  <i data-lucide="plus"></i>
                 </button>
+                <button class="btn-icon" title="Clear Queue" onclick="clearQueue('ai-upscale')">
+                  <i data-lucide="trash-2"></i>
+                </button>
+                <input
+                  type="file"
+                  id="file-input-ai-more"
+                  multiple
+                  style="display: none"
+                  onchange="addFilesToQueue(this.files, 'ai-upscale')"
+                />
+              </div>
+            </div>
+            <div id="file-list-ai-upscale" class="file-list-items"></div>
+            <div class="queue-footer">
+              <span class="ai-batch-note"
+                >Batch items are processed sequentially to avoid GPU rate limits</span
+              >
+              <button
+                id="btn-process-ai-upscale"
+                class="btn-primary-action"
+                onclick="processBatch('ai-upscale')"
+              >
+                <span>Process AI Queue</span><i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 4: ENHANCE PANEL -->
+        <div id="panel-enhance" class="tab-panel">
+          <div
+            class="empty-state"
+            id="drop-zone-enhance"
+            onclick="document.getElementById('file-input-enhance').click()"
+          >
+            <div class="upload-icon-wrapper"><i data-lucide="image-plus"></i></div>
+            <h3 class="upload-title">Drop files here to Enhance</h3>
+            <p class="upload-hint">
+              Applies unsharp edge sharpening, contrast tuning, and color vibrance
+            </p>
+            <button class="btn-primary-lg" type="button">Choose Files</button>
+            <input
+              type="file"
+              id="file-input-enhance"
+              multiple
+              style="display: none"
+              onchange="addFilesToQueue(this.files, 'enhance')"
+            />
+          </div>
+
+          <div id="queue-container-enhance" class="queue-container" style="display: none">
+            <div class="queue-header">
+              <span id="queue-summary-enhance" class="queue-summary">0 File(s) • 0.00 MB</span>
+              <div class="queue-header-actions">
+                <button
+                  class="btn-icon"
+                  title="Add More Files"
+                  onclick="document.getElementById('file-input-enhance-more').click()"
+                >
+                  <i data-lucide="plus"></i>
+                </button>
+                <button class="btn-icon" title="Clear Queue" onclick="clearQueue('enhance')">
+                  <i data-lucide="trash-2"></i>
+                </button>
+                <input
+                  type="file"
+                  id="file-input-enhance-more"
+                  multiple
+                  style="display: none"
+                  onchange="addFilesToQueue(this.files, 'enhance')"
+                />
+              </div>
             </div>
 
-            <!-- TAB 1: CONVERT PANEL -->
-            <div id="panel-convert" class="tab-panel active">
-                <div class="empty-state" id="drop-zone-convert" onclick="document.getElementById('file-input-convert').click()">
-                    <div class="upload-icon-wrapper"><i data-lucide="file-up"></i></div>
-                    <h3 class="upload-title">Drop files here, or click to browse</h3>
-                    <p class="upload-hint">PNG, JPG, WEBP, HEIC, HEIF, PDF • Up to 15MB per file</p>
-                    <button class="btn-primary-lg" type="button">Choose Files</button>
-                    <input type="file" id="file-input-convert" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'convert')">
-                </div>
-
-                <div id="queue-container-convert" class="queue-container" style="display: none;">
-                    <div class="queue-header">
-                        <span id="queue-summary-convert" class="queue-summary">0 File(s) • 0.00 MB</span>
-                        <div class="queue-header-actions">
-                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-convert-more').click()"><i data-lucide="plus"></i></button>
-                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('convert')"><i data-lucide="trash-2"></i></button>
-                            <input type="file" id="file-input-convert-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'convert')">
-                        </div>
-                    </div>
-                    <div id="file-list-convert" class="file-list-items"></div>
-                    <div class="queue-footer">
-                        <div class="batch-controls">
-                            <span class="batch-label">Convert All To:</span>
-                            <select id="batch-format-convert" class="native-styled-select select-compact" onchange="updateAllFormats('convert', this.value)">
-                                <option value="webp" selected>WEBP</option>
-                                <option value="png">PNG</option>
-                                <option value="jpg">JPG</option>
-                            </select>
-                        </div>
-                        <button id="btn-process-convert" class="btn-primary-action" onclick="processBatch('convert')">
-                            <span>Convert All</span><i data-lucide="arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
+            <div class="global-tab-settings">
+              <div class="control-group">
+                <label for="enhance-mode">Enhancement Preset</label>
+                <select id="enhance-mode" class="native-styled-select">
+                  <option value="full" selected>Full (Sharpen + Contrast + Color)</option>
+                  <option value="sharpen">Sharpen Edges Only</option>
+                  <option value="contrast">Boost Contrast</option>
+                  <option value="color">Enhance Color Vibrance</option>
+                </select>
+              </div>
             </div>
 
-            <!-- TAB 2: STANDARD UPSCALE PANEL -->
-            <div id="panel-upscale" class="tab-panel">
-                <div class="empty-state" id="drop-zone-upscale" onclick="document.getElementById('file-input-upscale').click()">
-                    <div class="upload-icon-wrapper"><i data-lucide="maximize-2"></i></div>
-                    <h3 class="upload-title">Drop files here for Standard Upscaling</h3>
-                    <p class="upload-hint">Fast mathematical Lanczos pixel resampling</p>
-                    <button class="btn-primary-lg" type="button">Choose Files</button>
-                    <input type="file" id="file-input-upscale" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'upscale')">
-                </div>
+            <div id="file-list-enhance" class="file-list-items"></div>
+            <div class="queue-footer">
+              <div class="batch-controls">
+                <span class="batch-label">Output Format:</span>
+                <select
+                  id="batch-format-enhance"
+                  class="native-styled-select select-compact"
+                  onchange="updateAllFormats('enhance', this.value)"
+                >
+                  <option value="png" selected>PNG</option>
+                  <option value="jpg">JPG</option>
+                  <option value="webp">WEBP</option>
+                </select>
+              </div>
+              <button
+                id="btn-process-enhance"
+                class="btn-primary-action"
+                onclick="processBatch('enhance')"
+              >
+                <span>Enhance All</span><i data-lucide="arrow-right"></i>
+              </button>
+            </div>
+          </div>
+        </div>
 
-                <div id="queue-container-upscale" class="queue-container" style="display: none;">
-                    <div class="queue-header">
-                        <span id="queue-summary-upscale" class="queue-summary">0 File(s) • 0.00 MB</span>
-                        <div class="queue-header-actions">
-                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-upscale-more').click()"><i data-lucide="plus"></i></button>
-                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('upscale')"><i data-lucide="trash-2"></i></button>
-                            <input type="file" id="file-input-upscale-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'upscale')">
-                        </div>
-                    </div>
-                    
-                    <div class="global-tab-settings">
-                        <div class="control-group">
-                            <label for="target-res">Target Resolution</label>
-                            <select id="target-res" class="native-styled-select">
-                                <option value="720p">720p (HD)</option>
-                                <option value="1080p" selected>1080p (Full HD)</option>
-                                <option value="1440p">1440p (2K)</option>
-                                <option value="2160p">2160p (4K)</option>
-                            </select>
-                        </div>
-                        <div class="control-group">
-                            <label for="resample-filter">Algorithm</label>
-                            <select id="resample-filter" class="native-styled-select">
-                                <option value="lanczos" selected>Lanczos (Sharp)</option>
-                                <option value="bicubic">Bicubic (Smooth)</option>
-                                <option value="bilinear">Bilinear (Fast)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="file-list-upscale" class="file-list-items"></div>
-                    <div class="queue-footer">
-                        <div class="batch-controls">
-                            <span class="batch-label">Output Format:</span>
-                            <select id="batch-format-upscale" class="native-styled-select select-compact" onchange="updateAllFormats('upscale', this.value)">
-                                <option value="png" selected>PNG</option>
-                                <option value="jpg">JPG</option>
-                                <option value="webp">WEBP</option>
-                            </select>
-                        </div>
-                        <button id="btn-process-upscale" class="btn-primary-action" onclick="processBatch('upscale')">
-                            <span>Upscale All</span><i data-lucide="arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
+        <!-- TAB 5: LINK DOWNLOADER PANEL (MP4 / MP3) -->
+        <div id="panel-video-download" class="tab-panel">
+          <div class="link-downloader-card">
+            <div class="downloader-header">
+              <div class="upload-icon-wrapper">
+                <i data-lucide="link"></i>
+              </div>
+              <div>
+                <h3 class="upload-title">Media Link Downloader</h3>
+                <p class="upload-hint">
+                  Extract and convert web video links directly to MP4 Video or MP3 Audio
+                </p>
+              </div>
             </div>
 
-            <!-- TAB 3: AI SUPER-RESOLUTION PANEL -->
-            <div id="panel-ai-upscale" class="tab-panel">
-                <div class="empty-state" id="drop-zone-ai-upscale" onclick="document.getElementById('file-input-ai-upscale').click()">
-                    <div class="upload-icon-wrapper"><i data-lucide="sparkles"></i></div>
-                    <h3 class="upload-title">Drop files here for AI Super-Resolution</h3>
-                    <p class="upload-hint">Reconstructs missing details & keeps transparent edges sharp</p>
-                    <button class="btn-primary-lg" type="button">Choose Files</button>
-                    <input type="file" id="file-input-ai-upscale" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'ai-upscale')">
-                </div>
+            <div class="global-tab-settings downloader-settings">
+              <div class="control-group">
+                <label for="video-url-input">Website Link URL</label>
+                <input
+                  type="url"
+                  id="video-url-input"
+                  class="native-styled-select url-input-field"
+                  placeholder="https://www.youtube.com/watch?v=... or any web video link"
+                />
+              </div>
+              <div class="control-group">
+                <label for="media-type-select">Format</label>
+                <select
+                  id="media-type-select"
+                  class="native-styled-select"
+                  onchange="toggleMediaTypeSettings(this.value)"
+                >
+                  <option value="mp4" selected>MP4 (Video)</option>
+                  <option value="mp3">MP3 (Audio)</option>
+                </select>
+              </div>
 
-                <div id="queue-container-ai-upscale" class="queue-container" style="display: none;">
-                    <div class="queue-header">
-                        <span id="queue-summary-ai-upscale" class="queue-summary">0 File(s) • 0.00 MB</span>
-                        <div class="queue-header-actions">
-                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-ai-more').click()"><i data-lucide="plus"></i></button>
-                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('ai-upscale')"><i data-lucide="trash-2"></i></button>
-                            <input type="file" id="file-input-ai-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'ai-upscale')">
-                        </div>
-                    </div>
-                    <div id="file-list-ai-upscale" class="file-list-items"></div>
-                    <div class="queue-footer">
-                        <span class="ai-batch-note">Batch items are processed sequentially to avoid GPU rate limits</span>
-                        <button id="btn-process-ai-upscale" class="btn-primary-action" onclick="processBatch('ai-upscale')">
-                            <span>Process AI Queue</span><i data-lucide="arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
+              <!-- MP4 Resolution Control -->
+              <div class="control-group" id="group-video-quality">
+                <label for="video-quality-select">Max Resolution</label>
+                <select id="video-quality-select" class="native-styled-select">
+                  <option value="1080" selected>1080p (Full HD)</option>
+                  <option value="720">720p (HD)</option>
+                  <option value="480">480p (SD)</option>
+                  <option value="360">360p (Low)</option>
+                </select>
+              </div>
+
+              <!-- MP3 Audio Bitrate Quality Control -->
+              <div class="control-group" id="group-audio-quality" style="display: none">
+                <label for="audio-quality-select">Audio Quality</label>
+                <select id="audio-quality-select" class="native-styled-select">
+                  <option value="320">320 kbps (High Quality)</option>
+                  <option value="256">256 kbps (Very Good)</option>
+                  <option value="192" selected>192 kbps (Standard)</option>
+                  <option value="128">128 kbps (Fastest)</option>
+                </select>
+              </div>
             </div>
 
-            <!-- TAB 4: ENHANCE PANEL -->
-            <div id="panel-enhance" class="tab-panel">
-                <div class="empty-state" id="drop-zone-enhance" onclick="document.getElementById('file-input-enhance').click()">
-                    <div class="upload-icon-wrapper"><i data-lucide="image-plus"></i></div>
-                    <h3 class="upload-title">Drop files here to Enhance</h3>
-                    <p class="upload-hint">Applies unsharp edge sharpening, contrast tuning, and color vibrance</p>
-                    <button class="btn-primary-lg" type="button">Choose Files</button>
-                    <input type="file" id="file-input-enhance" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'enhance')">
-                </div>
-
-                <div id="queue-container-enhance" class="queue-container" style="display: none;">
-                    <div class="queue-header">
-                        <span id="queue-summary-enhance" class="queue-summary">0 File(s) • 0.00 MB</span>
-                        <div class="queue-header-actions">
-                            <button class="btn-icon" title="Add More Files" onclick="document.getElementById('file-input-enhance-more').click()"><i data-lucide="plus"></i></button>
-                            <button class="btn-icon" title="Clear Queue" onclick="clearQueue('enhance')"><i data-lucide="trash-2"></i></button>
-                            <input type="file" id="file-input-enhance-more" multiple style="display:none;" onchange="addFilesToQueue(this.files, 'enhance')">
-                        </div>
-                    </div>
-
-                    <div class="global-tab-settings">
-                        <div class="control-group">
-                            <label for="enhance-mode">Enhancement Preset</label>
-                            <select id="enhance-mode" class="native-styled-select">
-                                <option value="full" selected>Full (Sharpen + Contrast + Color)</option>
-                                <option value="sharpen">Sharpen Edges Only</option>
-                                <option value="contrast">Boost Contrast</option>
-                                <option value="color">Enhance Color Vibrance</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div id="file-list-enhance" class="file-list-items"></div>
-                    <div class="queue-footer">
-                        <div class="batch-controls">
-                            <span class="batch-label">Output Format:</span>
-                            <select id="batch-format-enhance" class="native-styled-select select-compact" onchange="updateAllFormats('enhance', this.value)">
-                                <option value="png" selected>PNG</option>
-                                <option value="jpg">JPG</option>
-                                <option value="webp">WEBP</option>
-                            </select>
-                        </div>
-                        <button id="btn-process-enhance" class="btn-primary-action" onclick="processBatch('enhance')">
-                            <span>Enhance All</span><i data-lucide="arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
+            <!-- Processing Status & Animated Loading Bar -->
+            <div id="video-download-status" class="download-status-card" style="display: none">
+              <div class="status-indicator-header">
+                <span class="badge badge-busy">
+                  <i data-lucide="loader-2" class="spinner-icon"></i> Processing Stream
+                </span>
+                <span id="status-message" class="status-message-text"
+                  >Extracting media file... Please wait.</span
+                >
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill"></div>
+              </div>
             </div>
 
-            <!-- TAB 5: LINK DOWNLOADER PANEL (MP4 / MP3) -->
-            <div id="panel-video-download" class="tab-panel">
-                <div class="link-downloader-card">
-                    <div class="downloader-header">
-                        <div class="upload-icon-wrapper">
-                            <i data-lucide="link"></i>
-                        </div>
-                        <div>
-                            <h3 class="upload-title">Media Link Downloader</h3>
-                            <p class="upload-hint">Extract and convert web video links directly to MP4 Video or MP3 Audio</p>
-                        </div>
-                    </div>
-                    
-                    <div class="global-tab-settings downloader-settings">
-                        <div class="control-group">
-                            <label for="video-url-input">Website Link URL</label>
-                            <input type="url" id="video-url-input" class="native-styled-select url-input-field" placeholder="https://www.youtube.com/watch?v=... or any web video link">
-                        </div>
-                        <div class="control-group">
-                            <label for="media-type-select">Format</label>
-                            <select id="media-type-select" class="native-styled-select" onchange="toggleMediaTypeSettings(this.value)">
-                                <option value="mp4" selected>MP4 (Video)</option>
-                                <option value="mp3">MP3 (Audio)</option>
-                            </select>
-                        </div>
-                        
-                        <!-- MP4 Resolution Control -->
-                        <div class="control-group" id="group-video-quality">
-                            <label for="video-quality-select">Max Resolution</label>
-                            <select id="video-quality-select" class="native-styled-select">
-                                <option value="1080" selected>1080p (Full HD)</option>
-                                <option value="720">720p (HD)</option>
-                                <option value="480">480p (SD)</option>
-                                <option value="360">360p (Low)</option>
-                            </select>
-                        </div>
+            <button
+              id="btn-convert-video"
+              class="btn-primary-lg"
+              type="button"
+              onclick="convertVideoLink()"
+            >
+              <span>Download Media File</span>
+            </button>
+          </div>
+        </div>
+      </main>
 
-                        <!-- MP3 Audio Bitrate Quality Control -->
-                        <div class="control-group" id="group-audio-quality" style="display: none;">
-                            <label for="audio-quality-select">Audio Quality</label>
-                            <select id="audio-quality-select" class="native-styled-select">
-                                <option value="320">320 kbps (High Quality)</option>
-                                <option value="256">256 kbps (Very Good)</option>
-                                <option value="192" selected>192 kbps (Standard)</option>
-                                <option value="128">128 kbps (Fastest)</option>
-                            </select>
-                        </div>
-                    </div>
+      <!-- Secondary Information Bar -->
+      <section class="info-row">
+        <div class="info-item">
+          <i data-lucide="shield-check"></i>
+          <span>Private & Secure — Files processed directly in memory</span>
+        </div>
+        <div class="info-item">
+          <i data-lucide="trash-2"></i>
+          <span>Zero Storage — Memory cleaned instantly after download</span>
+        </div>
+        <div class="info-item">
+          <i data-lucide="zap"></i>
+          <span>Free AI Super-Resolution — Powered by OpenCV LapSRN</span>
+        </div>
+      </section>
 
-                    <!-- Processing Status & Animated Loading Bar -->
-                    <div id="video-download-status" class="download-status-card" style="display: none;">
-                        <div class="status-indicator-header">
-                            <span class="badge badge-busy">
-                                <i data-lucide="loader-2" class="spinner-icon"></i> Processing Stream
-                            </span>
-                            <span id="status-message" class="status-message-text">Extracting media file... Please wait.</span>
-                        </div>
-                        <div class="progress-bar-track">
-                            <div class="progress-bar-fill"></div>
-                        </div>
-                    </div>
+      <!-- FAQ Section -->
+      <section class="faq-section" id="faq">
+        <h2 class="section-title">Frequently Asked Questions</h2>
+        <div class="faq-container">
+          <details class="faq-item">
+            <summary>Can I download MP3 audio files directly from video links?</summary>
+            <p>
+              Yes. Select <strong>MP3 (Audio)</strong> in the Link Downloader tab to extract audio
+              streams and convert them into MP3 audio files with customizable bitrates (up to
+              320kbps) powered by FFmpeg.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>What video resolutions are available for MP4 downloads?</summary>
+            <p>
+              You can choose maximum resolutions ranging from 360p up to 1080p Full HD.
+              High-definition video and audio tracks are automatically merged on the fly.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>What website video links are supported?</summary>
+            <p>
+              Powered by yt-dlp, the downloader supports thousands of sites including YouTube,
+              Vimeo, Twitter/X, TikTok, and direct media link URLs.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>What is the file size limit for video downloads?</summary>
+            <p>
+              To preserve server speed and prevent timeouts, single media link downloads are capped
+              at 100MB per request.
+            </p>
+          </details>
+          <details class="faq-item">
+            <summary>How does AI Super-Resolution differ from Standard Upscaling?</summary>
+            <p>
+              <strong>Standard Upscaling</strong> uses mathematical resampling (Lanczos/Bicubic) to
+              enlarge pixel grids quickly. <strong>AI Super-Resolution</strong> utilizes deep
+              learning to reconstruct sharp edges, missing line details, and clean transparency
+              masks without blurry pixelation.
+            </p>
+          </details>
+        </div>
+      </section>
 
-                    <button id="btn-convert-video" class="btn-primary-lg" type="button" onclick="convertVideoLink()">
-                        <span>Download Media File</span>
-                    </button>
-                </div>
-            </div>
-
-        </main>
-
-        <!-- Secondary Information Bar -->
-        <section class="info-row">
-            <div class="info-item">
-                <i data-lucide="shield-check"></i>
-                <span>Private & Secure — Files processed directly in memory</span>
-            </div>
-            <div class="info-item">
-                <i data-lucide="trash-2"></i>
-                <span>Zero Storage — Memory cleaned instantly after download</span>
-            </div>
-            <div class="info-item">
-                <i data-lucide="zap"></i>
-                <span>Free AI Super-Resolution — Powered by OpenCV LapSRN</span>
-            </div>
-        </section>
-
-        <!-- FAQ Section -->
-        <section class="faq-section" id="faq">
-            <h2 class="section-title">Frequently Asked Questions</h2>
-            <div class="faq-container">
-                <details class="faq-item">
-                    <summary>Can I download MP3 audio files directly from video links?</summary>
-                    <p>Yes. Select <strong>MP3 (Audio)</strong> in the Link Downloader tab to extract audio streams and convert them into MP3 audio files with customizable bitrates (up to 320kbps) powered by FFmpeg.</p>
-                </details>
-                <details class="faq-item">
-                    <summary>What video resolutions are available for MP4 downloads?</summary>
-                    <p>You can choose maximum resolutions ranging from 360p up to 1080p Full HD. High-definition video and audio tracks are automatically merged on the fly.</p>
-                </details>
-                <details class="faq-item">
-                    <summary>What website video links are supported?</summary>
-                    <p>Powered by yt-dlp, the downloader supports thousands of sites including YouTube, Vimeo, Twitter/X, TikTok, and direct media link URLs.</p>
-                </details>
-                <details class="faq-item">
-                    <summary>What is the file size limit for video downloads?</summary>
-                    <p>To preserve server speed and prevent timeouts, single media link downloads are capped at 100MB per request.</p>
-                </details>
-                <details class="faq-item">
-                    <summary>How does AI Super-Resolution differ from Standard Upscaling?</summary>
-                    <p><strong>Standard Upscaling</strong> uses mathematical resampling (Lanczos/Bicubic) to enlarge pixel grids quickly. <strong>AI Super-Resolution</strong> utilizes deep learning to reconstruct sharp edges, missing line details, and clean transparency masks without blurry pixelation.</p>
-                </details>
-            </div>
-        </section>
-
-        <!-- Footer -->
-        <footer class="app-footer">
-            <p>&copy; 2026 OmniShift. Built with Flask, Pillow, OpenCV & yt-dlp.</p>
-        </footer>
-
+      <!-- Footer -->
+      <footer class="app-footer">
+        <p>&copy; 2026 OmniShift. Built with Flask, Pillow, OpenCV & yt-dlp.</p>
+      </footer>
     </div>
 
-   <script>
-    lucide.createIcons();
+    <script>
+      lucide.createIcons();
 
-    const BATCH_LIMITS = {
-        'convert': 10,
-        'upscale': 5,
-        'ai-upscale': 3,
-        'enhance': 5
-    };
+      const BATCH_LIMITS = {
+        convert: 10,
+        upscale: 5,
+        "ai-upscale": 3,
+        enhance: 5,
+      };
 
-    const queues = {
-        'convert': [],
-        'upscale': [],
-        'ai-upscale': [],
-        'enhance': []
-    };
+      const queues = {
+        convert: [],
+        upscale: [],
+        "ai-upscale": [],
+        enhance: [],
+      };
 
-    function switchTab(tabName, evt) {
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
+      function switchTab(tabName, evt) {
+        document.querySelectorAll(".tab-btn").forEach((btn) => btn.classList.remove("active"));
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach((panel) => panel.classList.remove("active"));
 
         if (evt && evt.currentTarget) {
-            evt.currentTarget.classList.add('active');
+          evt.currentTarget.classList.add("active");
         }
-        document.getElementById('panel-' + tabName).classList.add('active');
-    }
+        document.getElementById("panel-" + tabName).classList.add("active");
+      }
 
-    function toggleMediaTypeSettings(type) {
-        const videoGroup = document.getElementById('group-video-quality');
-        const audioGroup = document.getElementById('group-audio-quality');
+      function toggleMediaTypeSettings(type) {
+        const videoGroup = document.getElementById("group-video-quality");
+        const audioGroup = document.getElementById("group-audio-quality");
 
-        if (type === 'mp3') {
-            if (videoGroup) videoGroup.style.display = 'none';
-            if (audioGroup) audioGroup.style.display = 'flex';
+        if (type === "mp3") {
+          if (videoGroup) videoGroup.style.display = "none";
+          if (audioGroup) audioGroup.style.display = "flex";
         } else {
-            if (videoGroup) videoGroup.style.display = 'flex';
-            if (audioGroup) audioGroup.style.display = 'none';
+          if (videoGroup) videoGroup.style.display = "flex";
+          if (audioGroup) audioGroup.style.display = "none";
         }
-    }
+      }
 
-    /* CUSTOM COMPACT DROPDOWN MENU HANDLER */
-    function initCustomSelects() {
-        document.querySelectorAll('select.native-styled-select').forEach(select => {
-            if (select.closest('.cs-wrap')) return;
+      /* CUSTOM COMPACT DROPDOWN MENU HANDLER */
+      function initCustomSelects() {
+        document.querySelectorAll("select.native-styled-select").forEach((select) => {
+          if (select.closest(".cs-wrap")) return;
 
-            const wrap = document.createElement('div');
-            wrap.className = 'cs-wrap';
-            select.parentNode.insertBefore(wrap, select);
-            wrap.appendChild(select);
+          const wrap = document.createElement("div");
+          wrap.className = "cs-wrap";
+          select.parentNode.insertBefore(wrap, select);
+          wrap.appendChild(select);
 
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.className = 'cs-button';
-            button.tabIndex = 0;
-            wrap.appendChild(button);
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "cs-button";
+          button.tabIndex = 0;
+          wrap.appendChild(button);
 
-            const list = document.createElement('ul');
-            list.className = 'cs-list';
-            wrap.appendChild(list);
+          const list = document.createElement("ul");
+          list.className = "cs-list";
+          wrap.appendChild(list);
 
-            function sync() {
-                const selectedOption = select.options[select.selectedIndex] || select.options[0];
-                button.textContent = selectedOption ? selectedOption.textContent : '';
-                list.innerHTML = '';
-                
-                Array.from(select.options).forEach((opt, idx) => {
-                    const li = document.createElement('li');
-                    li.className = 'cs-item';
-                    if (idx === select.selectedIndex) li.setAttribute('aria-selected', 'true');
-                    li.textContent = opt.textContent;
-                    li.onclick = (e) => {
-                        e.stopPropagation();
-                        select.selectedIndex = idx;
-                        select.dispatchEvent(new Event('change', { bubbles: true }));
-                        sync();
-                        wrap.classList.remove('open');
-                    };
-                    list.appendChild(li);
-                });
-            }
+          function sync() {
+            const selectedOption = select.options[select.selectedIndex] || select.options[0];
+            button.textContent = selectedOption ? selectedOption.textContent : "";
+            list.innerHTML = "";
 
-            button.onclick = (e) => {
+            Array.from(select.options).forEach((opt, idx) => {
+              const li = document.createElement("li");
+              li.className = "cs-item";
+              if (idx === select.selectedIndex) li.setAttribute("aria-selected", "true");
+              li.textContent = opt.textContent;
+              li.onclick = (e) => {
                 e.stopPropagation();
-                document.querySelectorAll('.cs-wrap.open').forEach(w => {
-                    if (w !== wrap) w.classList.remove('open');
-                });
-                wrap.classList.toggle('open');
-            };
+                select.selectedIndex = idx;
+                select.dispatchEvent(new Event("change", { bubbles: true }));
+                sync();
+                wrap.classList.remove("open");
+              };
+              list.appendChild(li);
+            });
+          }
 
-            select.addEventListener('change', sync);
-            sync();
+          button.onclick = (e) => {
+            e.stopPropagation();
+            document.querySelectorAll(".cs-wrap.open").forEach((w) => {
+              if (w !== wrap) w.classList.remove("open");
+            });
+            wrap.classList.toggle("open");
+          };
+
+          select.addEventListener("change", sync);
+          sync();
         });
-    }
+      }
 
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.cs-wrap')) {
-            document.querySelectorAll('.cs-wrap.open').forEach(w => w.classList.remove('open'));
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".cs-wrap")) {
+          document.querySelectorAll(".cs-wrap.open").forEach((w) => w.classList.remove("open"));
         }
-    });
+      });
 
-    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-        window.addEventListener(eventName, (e) => {
+      ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
+        window.addEventListener(
+          eventName,
+          (e) => {
             e.preventDefault();
             e.stopPropagation();
-        }, false);
-    });
+          },
+          false,
+        );
+      });
 
-    function setupDropZone(dropZoneId, inputId, mode) {
+      function setupDropZone(dropZoneId, inputId, mode) {
         const zone = document.getElementById(dropZoneId);
         if (!zone) return;
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            zone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                zone.classList.add('drag-active');
-            }, false);
+        ["dragenter", "dragover"].forEach((eventName) => {
+          zone.addEventListener(
+            eventName,
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              zone.classList.add("drag-active");
+            },
+            false,
+          );
         });
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            zone.addEventListener(eventName, (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                zone.classList.remove('drag-active');
-            }, false);
+        ["dragleave", "drop"].forEach((eventName) => {
+          zone.addEventListener(
+            eventName,
+            (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              zone.classList.remove("drag-active");
+            },
+            false,
+          );
         });
 
-        zone.addEventListener('drop', (e) => {
+        zone.addEventListener(
+          "drop",
+          (e) => {
             const dt = e.dataTransfer;
             if (dt && dt.files && dt.files.length > 0) {
-                addFilesToQueue(dt.files, mode);
+              addFilesToQueue(dt.files, mode);
             }
-        }, false);
-    }
+          },
+          false,
+        );
+      }
 
-    document.addEventListener('DOMContentLoaded', () => {
-        setupDropZone('drop-zone-convert', 'file-input-convert', 'convert');
-        setupDropZone('drop-zone-upscale', 'file-input-upscale', 'upscale');
-        setupDropZone('drop-zone-ai-upscale', 'file-input-ai-upscale', 'ai-upscale');
-        setupDropZone('drop-zone-enhance', 'file-input-enhance', 'enhance');
+      document.addEventListener("DOMContentLoaded", () => {
+        setupDropZone("drop-zone-convert", "file-input-convert", "convert");
+        setupDropZone("drop-zone-upscale", "file-input-upscale", "upscale");
+        setupDropZone("drop-zone-ai-upscale", "file-input-ai-upscale", "ai-upscale");
+        setupDropZone("drop-zone-enhance", "file-input-enhance", "enhance");
         initCustomSelects();
-    });
+      });
 
-    function addFilesToQueue(files, mode) {
+      function addFilesToQueue(files, mode) {
         if (!files || files.length === 0) return;
 
         const maxLimit = BATCH_LIMITS[mode] || 5;
@@ -504,52 +687,54 @@
         const remainingSlots = maxLimit - currentCount;
 
         if (remainingSlots <= 0) {
-            alert(`Queue limit reached. Maximum ${maxLimit} files allowed at once for ${mode}.`);
-            return;
+          alert(`Queue limit reached. Maximum ${maxLimit} files allowed at once for ${mode}.`);
+          return;
         }
 
-        let defaultFormat = 'png';
+        let defaultFormat = "png";
         const batchSelect = document.getElementById(`batch-format-${mode}`);
         if (batchSelect) defaultFormat = batchSelect.value;
 
         const filesToAdd = Array.from(files).slice(0, remainingSlots);
         if (files.length > remainingSlots) {
-            alert(`Added ${remainingSlots} file(s). Exceeded maximum batch limit of ${maxLimit} files for this tab.`);
+          alert(
+            `Added ${remainingSlots} file(s). Exceeded maximum batch limit of ${maxLimit} files for this tab.`,
+          );
         }
 
         for (let file of filesToAdd) {
-            queues[mode].push({
-                id: Math.random().toString(36).substring(2, 9),
-                file: file,
-                format: defaultFormat,
-                status: 'Ready'
-            });
+          queues[mode].push({
+            id: Math.random().toString(36).substring(2, 9),
+            file: file,
+            format: defaultFormat,
+            status: "Ready",
+          });
         }
 
         renderQueueUI(mode);
-    }
+      }
 
-    function removeQueueItem(mode, id) {
-        queues[mode] = queues[mode].filter(item => item.id !== id);
+      function removeQueueItem(mode, id) {
+        queues[mode] = queues[mode].filter((item) => item.id !== id);
         renderQueueUI(mode);
-    }
+      }
 
-    function clearQueue(mode) {
+      function clearQueue(mode) {
         queues[mode] = [];
         renderQueueUI(mode);
-    }
+      }
 
-    function updateItemFormat(mode, id, format) {
-        const item = queues[mode].find(i => i.id === id);
+      function updateItemFormat(mode, id, format) {
+        const item = queues[mode].find((i) => i.id === id);
         if (item) item.format = format;
-    }
+      }
 
-    function updateAllFormats(mode, format) {
-        queues[mode].forEach(item => item.format = format);
+      function updateAllFormats(mode, format) {
+        queues[mode].forEach((item) => (item.format = format));
         renderQueueUI(mode);
-    }
+      }
 
-    function renderQueueUI(mode) {
+      function renderQueueUI(mode) {
         const emptyZone = document.getElementById(`drop-zone-${mode}`);
         const queueContainer = document.getElementById(`queue-container-${mode}`);
         const itemsList = document.getElementById(`file-list-${mode}`);
@@ -557,227 +742,237 @@
         const maxLimit = BATCH_LIMITS[mode] || 5;
 
         if (queues[mode].length === 0) {
-            emptyZone.style.display = 'flex';
-            queueContainer.style.display = 'none';
-            return;
+          emptyZone.style.display = "flex";
+          queueContainer.style.display = "none";
+          return;
         }
 
-        emptyZone.style.display = 'none';
-        queueContainer.style.display = 'block';
+        emptyZone.style.display = "none";
+        queueContainer.style.display = "block";
 
         let totalBytes = queues[mode].reduce((acc, curr) => acc + curr.file.size, 0);
         let totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
         summaryText.textContent = `${queues[mode].length}/${maxLimit} File(s) • ${totalMB} MB`;
 
-        itemsList.innerHTML = '';
+        itemsList.innerHTML = "";
 
-        queues[mode].forEach(item => {
-            const mbSize = (item.file.size / (1024 * 1024)).toFixed(2);
-            const itemEl = document.createElement('div');
-            itemEl.className = 'file-queue-item';
+        queues[mode].forEach((item) => {
+          const mbSize = (item.file.size / (1024 * 1024)).toFixed(2);
+          const itemEl = document.createElement("div");
+          itemEl.className = "file-queue-item";
 
-            let actionBadge = '';
-            if (item.status === 'Ready') {
-                actionBadge = `<span class="badge badge-ready">Ready</span>`;
-            } else if (item.status === 'Processing') {
-                actionBadge = `<span class="badge badge-busy">Processing...</span>`;
-            } else if (item.status === 'Done') {
-                actionBadge = `<span class="badge badge-success">Downloaded</span>`;
-            } else {
-                actionBadge = `<span class="badge badge-error">Failed</span>`;
-            }
+          let actionBadge = "";
+          if (item.status === "Ready") {
+            actionBadge = `<span class="badge badge-ready">Ready</span>`;
+          } else if (item.status === "Processing") {
+            actionBadge = `<span class="badge badge-busy">Processing...</span>`;
+          } else if (item.status === "Done") {
+            actionBadge = `<span class="badge badge-success">Downloaded</span>`;
+          } else {
+            actionBadge = `<span class="badge badge-error">Failed</span>`;
+          }
 
-            const hideFormatSelector = mode === 'ai-upscale';
+          const hideFormatSelector = mode === "ai-upscale";
 
-            const fileLeftDiv = document.createElement('div');
-            fileLeftDiv.className = 'file-item-left';
+          const fileLeftDiv = document.createElement("div");
+          fileLeftDiv.className = "file-item-left";
 
-            const fileIcon = document.createElement('i');
-            fileIcon.setAttribute('data-lucide', 'image');
-            fileIcon.className = 'file-icon';
+          const fileIcon = document.createElement("i");
+          fileIcon.setAttribute("data-lucide", "image");
+          fileIcon.className = "file-icon";
 
-            const fileInfoDiv = document.createElement('div');
-            fileInfoDiv.className = 'file-info';
+          const fileInfoDiv = document.createElement("div");
+          fileInfoDiv.className = "file-info";
 
-            const fileNameSpan = document.createElement('span');
-            fileNameSpan.className = 'file-name';
-            fileNameSpan.title = item.file.name;
-            fileNameSpan.textContent = item.file.name;
+          const fileNameSpan = document.createElement("span");
+          fileNameSpan.className = "file-name";
+          fileNameSpan.title = item.file.name;
+          fileNameSpan.textContent = item.file.name;
 
-            const fileSizeSpan = document.createElement('span');
-            fileSizeSpan.className = 'file-size';
-            fileSizeSpan.textContent = `${mbSize} MB`;
+          const fileSizeSpan = document.createElement("span");
+          fileSizeSpan.className = "file-size";
+          fileSizeSpan.textContent = `${mbSize} MB`;
 
-            fileInfoDiv.appendChild(fileNameSpan);
-            fileInfoDiv.appendChild(fileSizeSpan);
-            fileLeftDiv.appendChild(fileIcon);
-            fileLeftDiv.appendChild(fileInfoDiv);
+          fileInfoDiv.appendChild(fileNameSpan);
+          fileInfoDiv.appendChild(fileSizeSpan);
+          fileLeftDiv.appendChild(fileIcon);
+          fileLeftDiv.appendChild(fileInfoDiv);
 
-            const fileRightDiv = document.createElement('div');
-            fileRightDiv.className = 'file-item-right';
-            fileRightDiv.innerHTML = `
+          const fileRightDiv = document.createElement("div");
+          fileRightDiv.className = "file-item-right";
+          fileRightDiv.innerHTML = `
                 ${actionBadge}
-                ${!hideFormatSelector ? `
-                <select class="native-styled-select select-compact" onchange="updateItemFormat('${mode}', '${item.id}', this.value)" ${item.status === 'Processing' ? 'disabled' : ''}>
-                    <option value="png" ${item.format === 'png' ? 'selected' : ''}>PNG</option>
-                    <option value="jpg" ${item.format === 'jpg' ? 'selected' : ''}>JPG</option>
-                    <option value="webp" ${item.format === 'webp' ? 'selected' : ''}>WEBP</option>
+                ${
+                  !hideFormatSelector
+                    ? `
+                <select class="native-styled-select select-compact" onchange="updateItemFormat('${mode}', '${item.id}', this.value)" ${item.status === "Processing" ? "disabled" : ""}>
+                    <option value="png" ${item.format === "png" ? "selected" : ""}>PNG</option>
+                    <option value="jpg" ${item.format === "jpg" ? "selected" : ""}>JPG</option>
+                    <option value="webp" ${item.format === "webp" ? "selected" : ""}>WEBP</option>
                 </select>
-                ` : ''}
+                `
+                    : ""
+                }
                 <button class="btn-remove-item" onclick="removeQueueItem('${mode}', '${item.id}')">
                     <i data-lucide="x"></i>
                 </button>
             `;
 
-            itemEl.appendChild(fileLeftDiv);
-            itemEl.appendChild(fileRightDiv);
-            itemsList.appendChild(itemEl);
+          itemEl.appendChild(fileLeftDiv);
+          itemEl.appendChild(fileRightDiv);
+          itemsList.appendChild(itemEl);
         });
 
         lucide.createIcons();
         initCustomSelects();
-    }
+      }
 
-    function triggerAutoDownload(blob, filename) {
+      function triggerAutoDownload(blob, filename) {
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
+        const a = document.createElement("a");
+        a.style.display = "none";
         a.href = url;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
-        
-        setTimeout(() => {
-            a.remove();
-            window.URL.revokeObjectURL(url);
-        }, 1000);
-    }
 
-    async function processBatch(mode, retryCount = 0) {
+        setTimeout(() => {
+          a.remove();
+          window.URL.revokeObjectURL(url);
+        }, 1000);
+      }
+
+      async function processBatch(mode, retryCount = 0) {
         const btn = document.getElementById(`btn-process-${mode}`);
         if (btn) btn.disabled = true;
 
         for (let item of queues[mode]) {
-            if (item.status === 'Done') continue;
+          if (item.status === "Done") continue;
 
-            item.status = 'Processing';
-            renderQueueUI(mode);
+          item.status = "Processing";
+          renderQueueUI(mode);
 
-            const formData = new FormData();
-            formData.append('file', item.file);
+          const formData = new FormData();
+          formData.append("file", item.file);
 
-            let endpoint = '/convert-single';
-            if (mode === 'upscale') {
-                endpoint = '/upscale-single';
-                formData.append('target_res', document.getElementById('target-res').value);
-                formData.append('target_format', item.format);
-                formData.append('resample', document.getElementById('resample-filter').value);
-            } else if (mode === 'ai-upscale') {
-                endpoint = '/ai-upscale-single';
-            } else if (mode === 'enhance') {
-                endpoint = '/enhance-single';
-                formData.append('enhance_mode', document.getElementById('enhance-mode').value);
-                formData.append('target_format', item.format);
-            } else {
-                formData.append('target_format', item.format);
+          let endpoint = "/convert-single";
+          if (mode === "upscale") {
+            endpoint = "/upscale-single";
+            formData.append("target_res", document.getElementById("target-res").value);
+            formData.append("target_format", item.format);
+            formData.append("resample", document.getElementById("resample-filter").value);
+          } else if (mode === "ai-upscale") {
+            endpoint = "/ai-upscale-single";
+          } else if (mode === "enhance") {
+            endpoint = "/enhance-single";
+            formData.append("enhance_mode", document.getElementById("enhance-mode").value);
+            formData.append("target_format", item.format);
+          } else {
+            formData.append("target_format", item.format);
+          }
+
+          try {
+            const response = await fetch(endpoint, { method: "POST", body: formData });
+
+            if (response.status === 503 && retryCount < 3) {
+              await new Promise((res) => setTimeout(res, 4000));
+              return processBatch(mode, retryCount + 1);
             }
 
-            try {
-                const response = await fetch(endpoint, { method: 'POST', body: formData });
+            if (!response.ok) throw new Error("Processing failed");
 
-                if (response.status === 503 && retryCount < 3) {
-                    await new Promise(res => setTimeout(res, 4000));
-                    return processBatch(mode, retryCount + 1);
-                }
+            const blob = await response.blob();
+            const outputName = `${mode}_${osFilenameWithoutExt(item.file.name)}.${mode === "ai-upscale" ? "png" : item.format}`;
 
-                if (!response.ok) throw new Error('Processing failed');
+            triggerAutoDownload(blob, outputName);
 
-                const blob = await response.blob();
-                const outputName = `${mode}_${osFilenameWithoutExt(item.file.name)}.${mode === 'ai-upscale' ? 'png' : item.format}`;
-                
-                triggerAutoDownload(blob, outputName);
-                
-                item.status = 'Done';
-            } catch (err) {
-                item.status = 'Error';
-            }
-            renderQueueUI(mode);
+            item.status = "Done";
+          } catch (err) {
+            item.status = "Error";
+          }
+          renderQueueUI(mode);
         }
 
         if (btn) btn.disabled = false;
-    }
+      }
 
-    async function convertVideoLink() {
-        const input = document.getElementById('video-url-input');
-        const mediaTypeSelect = document.getElementById('media-type-select');
-        const qualitySelect = document.getElementById('video-quality-select');
-        const audioQualitySelect = document.getElementById('audio-quality-select');
-        const btn = document.getElementById('btn-convert-video');
-        const statusDiv = document.getElementById('video-download-status');
-        const statusMsg = document.getElementById('status-message');
-        
-        const url = input ? input.value.trim() : '';
-        const mediaType = mediaTypeSelect ? mediaTypeSelect.value : 'mp4';
-        const quality = mediaType === 'mp3' 
-            ? (audioQualitySelect ? audioQualitySelect.value : '192')
-            : (qualitySelect ? qualitySelect.value : '1080');
+      async function convertVideoLink() {
+        const input = document.getElementById("video-url-input");
+        const mediaTypeSelect = document.getElementById("media-type-select");
+        const qualitySelect = document.getElementById("video-quality-select");
+        const audioQualitySelect = document.getElementById("audio-quality-select");
+        const btn = document.getElementById("btn-convert-video");
+        const statusDiv = document.getElementById("video-download-status");
+        const statusMsg = document.getElementById("status-message");
+
+        const url = input ? input.value.trim() : "";
+        const mediaType = mediaTypeSelect ? mediaTypeSelect.value : "mp4";
+        const quality =
+          mediaType === "mp3"
+            ? audioQualitySelect
+              ? audioQualitySelect.value
+              : "192"
+            : qualitySelect
+              ? qualitySelect.value
+              : "1080";
 
         if (!url) {
-            alert('Please enter a valid media link.');
-            return;
+          alert("Please enter a valid media link.");
+          return;
         }
 
         btn.disabled = true;
-        btn.style.opacity = '0.6';
+        btn.style.opacity = "0.6";
         if (statusMsg) {
-            statusMsg.textContent = mediaType === 'mp3' 
-                ? 'Extracting audio stream & converting to MP3...' 
-                : `Extracting video stream (${quality}p HD)...`;
+          statusMsg.textContent =
+            mediaType === "mp3"
+              ? "Extracting audio stream & converting to MP3..."
+              : `Extracting video stream (${quality}p HD)...`;
         }
-        statusDiv.style.display = 'block';
+        statusDiv.style.display = "block";
         lucide.createIcons();
 
         try {
-            const response = await fetch('/download-media', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url: url, type: mediaType, quality: quality })
-            });
+          const response = await fetch("/download-media", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: url, type: mediaType, quality: quality }),
+          });
 
-             if (!response.ok) {
-                let msg = 'Media extraction failed (server error or timeout)';
-                try {
-                    const errData = await response.json();
-                    msg = errData.error || msg;
-                } catch (_) {}
-                throw new Error(msg);
+          if (!response.ok) {
+            let msg = "Media extraction failed (server error or timeout)";
+            try {
+              const errData = await response.json();
+              msg = errData.error || msg;
+            } catch (_) {}
+            throw new Error(msg);
+          }
+
+          const blob = await response.blob();
+
+          let filename = mediaType === "mp3" ? "audio.mp3" : "video.mp4";
+          const disposition = response.headers.get("Content-Disposition");
+          if (disposition && disposition.indexOf("filename=") !== -1) {
+            const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+            if (matches != null && matches[1]) {
+              filename = matches[1].replace(/['"]/g, "");
             }
+          }
 
-            const blob = await response.blob();
-            
-            let filename = mediaType === 'mp3' ? 'audio.mp3' : 'video.mp4';
-            const disposition = response.headers.get('Content-Disposition');
-            if (disposition && disposition.indexOf('filename=') !== -1) {
-                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-                if (matches != null && matches[1]) {
-                    filename = matches[1].replace(/['"]/g, '');
-                }
-            }
-
-            triggerAutoDownload(blob, filename);
-            input.value = '';
+          triggerAutoDownload(blob, filename);
+          input.value = "";
         } catch (err) {
-            alert(`Error: ${err.message}`);
+          alert(`Error: ${err.message}`);
         } finally {
-            btn.disabled = false;
-            btn.style.opacity = '1';
-            statusDiv.style.display = 'none';
+          btn.disabled = false;
+          btn.style.opacity = "1";
+          statusDiv.style.display = "none";
         }
-    }
+      }
 
-    function osFilenameWithoutExt(filename) {
-        return filename.substring(0, filename.lastIndexOf('.')) || filename;
-    }
-</script>
-</body>
+      function osFilenameWithoutExt(filename) {
+        return filename.substring(0, filename.lastIndexOf(".")) || filename;
+      }
+    </script>
+  </body>
 </html>

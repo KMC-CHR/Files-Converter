@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   RefreshCw,
   Layers,
@@ -102,7 +102,7 @@ const FAQ_ITEMS = [
   {
     question: "What is the file size limit for video downloads?",
     answer:
-      "Downloads are processed in volatile memory without writing permanent files to disk, keeping transfers fast and lightweight for standard clips and tracks.",
+      "Downloads are processed in volatile memory without writing permanent files to disk (up to 100 MB per media link and 15 MB per image upload), keeping transfers fast and lightweight.",
   },
   {
     question: "How does AI Super-Resolution differ from Standard Upscaling?",
@@ -111,8 +111,42 @@ const FAQ_ITEMS = [
   },
 ];
 
+export function WorkspaceSkeleton({ toolId = "convert" }: { toolId?: ToolTab }) {
+  const dropzoneFrame = (
+    <div className="atelier-dropzone fc-skeleton-frame" aria-hidden="true">
+      <div className="fc-skeleton-block fc-skeleton-icon" />
+      <div className="fc-skeleton-copy">
+        <div className="fc-skeleton-block fc-skeleton-title" />
+        <div className="fc-skeleton-block fc-skeleton-hint" />
+      </div>
+      {toolId !== "download" && <div className="fc-skeleton-block fc-skeleton-cta" />}
+    </div>
+  );
+
+  if (toolId === "download") {
+    return (
+      <div className="fc-skeleton-card" aria-busy="true" aria-label="Loading workspace">
+        <div className="fc-skeleton-block fc-skeleton-label" />
+        <div className="fc-skeleton-row">
+          <div className="fc-skeleton-block fc-skeleton-input" />
+          <div className="fc-skeleton-block fc-skeleton-action" />
+        </div>
+        {dropzoneFrame}
+      </div>
+    );
+  }
+
+  return (
+    <div className="fc-skeleton-card" aria-busy="true" aria-label="Loading workspace">
+      {dropzoneFrame}
+    </div>
+  );
+}
+
 export function App() {
   const [activeTab, setActiveTab] = useState<ToolTab>("convert");
+  const [busyTool, setBusyTool] = useState<ToolTab | null>(null);
+  const [isSwitchingTab, setIsSwitchingTab] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const [theme, setTheme] = useState<ThemeMode>(() => {
     try {
@@ -131,28 +165,52 @@ export function App() {
     }
   }, [theme]);
 
+  useEffect(() => {
+    if (!isSwitchingTab) return;
+    const timer = window.setTimeout(() => setIsSwitchingTab(false), 140);
+    return () => window.clearTimeout(timer);
+  }, [isSwitchingTab]);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  };
+
+  const handleToolBusyChange = useCallback((tool: ToolTab, busy: boolean) => {
+    setBusyTool((current) => {
+      if (busy) return tool;
+      return current === tool ? null : current;
+    });
+  }, []);
+
+  const handleSelectTab = (nextTab: ToolTab) => {
+    if (nextTab === activeTab) return;
+    if (busyTool !== null && busyTool !== nextTab) return;
+    setIsSwitchingTab(true);
+    setActiveTab(nextTab);
   };
 
   const currentTool = TOOLS.find((t) => t.id === activeTab) || TOOLS[0];
 
   const renderActiveTool = () => {
+    if (isSwitchingTab) {
+      return <WorkspaceSkeleton toolId={activeTab} />;
+    }
+
     switch (activeTab) {
       case "convert":
-        return <ConvertTool />;
+        return <ConvertTool onBusyChange={(busy) => handleToolBusyChange("convert", busy)} />;
       case "remove-bg":
-        return <RemoveBgTool />;
+        return <RemoveBgTool onBusyChange={(busy) => handleToolBusyChange("remove-bg", busy)} />;
       case "upscale":
-        return <UpscaleTool />;
+        return <UpscaleTool onBusyChange={(busy) => handleToolBusyChange("upscale", busy)} />;
       case "ai-upscale":
-        return <AiSuperResTool />;
+        return <AiSuperResTool onBusyChange={(busy) => handleToolBusyChange("ai-upscale", busy)} />;
       case "enhance":
-        return <EnhanceTool />;
+        return <EnhanceTool onBusyChange={(busy) => handleToolBusyChange("enhance", busy)} />;
       case "download":
-        return <DownloadTool />;
+        return <DownloadTool onBusyChange={(busy) => handleToolBusyChange("download", busy)} />;
       default:
-        return <ConvertTool />;
+        return <ConvertTool onBusyChange={(busy) => handleToolBusyChange("convert", busy)} />;
     }
   };
 
@@ -166,11 +224,16 @@ export function App() {
           <div className="rail-section-label">Atelier Tools</div>
           {TOOLS.map((tool) => {
             const isActive = activeTab === tool.id;
+            const isLockedByOtherTool = busyTool !== null && busyTool !== tool.id;
             return (
               <button
                 key={tool.id}
                 type="button"
-                onClick={() => setActiveTab(tool.id)}
+                disabled={isLockedByOtherTool}
+                title={
+                  isLockedByOtherTool ? "Finish the active task before switching tools" : undefined
+                }
+                onClick={() => handleSelectTab(tool.id)}
                 className={`rail-btn ${isActive ? "active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
               >
@@ -310,7 +373,10 @@ export function App() {
                   }}
                 >
                   <span>{item.question}</span>
-                  <span style={{ color: "var(--accent-amber)", flexShrink: 0 }}>
+                  <span
+                    className={`faq-icon ${isOpen ? "open" : ""}`}
+                    style={{ color: "var(--accent-amber)", flexShrink: 0 }}
+                  >
                     {isOpen ? (
                       <Minus size={18} strokeWidth={1.75} />
                     ) : (
@@ -319,20 +385,25 @@ export function App() {
                   </span>
                 </button>
 
-                {isOpen && (
-                  <p
-                    id={`faq-answer-${index}`}
-                    style={{
-                      padding: "0 0.25rem 1.25rem",
-                      fontSize: "0.9375rem",
-                      color: "var(--text-secondary)",
-                      lineHeight: 1.6,
-                      maxWidth: "64ch",
-                    }}
-                  >
-                    {item.answer}
-                  </p>
-                )}
+                <div
+                  id={`faq-answer-${index}`}
+                  aria-hidden={!isOpen}
+                  className={`faq-answer-wrap ${isOpen ? "open" : ""}`}
+                >
+                  <div className="faq-answer-inner">
+                    <p
+                      style={{
+                        padding: "0 0.25rem 1.25rem",
+                        fontSize: "0.9375rem",
+                        color: "var(--text-secondary)",
+                        lineHeight: 1.6,
+                        maxWidth: "64ch",
+                      }}
+                    >
+                      {item.answer}
+                    </p>
+                  </div>
+                </div>
               </div>
             );
           })}

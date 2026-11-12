@@ -64,7 +64,10 @@ async def limit_upload_size(request: Request, call_next):
             
     return await call_next(request)
 
-allowed_origins_env = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000")
+allowed_origins_env = os.getenv(
+    "ALLOWED_ORIGINS",
+    "http://localhost:5173,http://localhost:3000,https://files-converter-a5pj.onrender.com",
+)
 origins = [origin.strip() for origin in allowed_origins_env.split(",") if origin.strip()]
 
 app.add_middleware(
@@ -107,13 +110,14 @@ if LEGACY_STATIC_DIR is not None:
     app.mount("/static", StaticFiles(directory=str(LEGACY_STATIC_DIR)), name="legacy_static")
 
 # Catch-all route to serve compiled SPA files or fallback to index.html
-@app.get("/{full_path:path}")
+@app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
 async def serve_frontend(full_path: str):
     if full_path.startswith("api/"):
         return JSONResponse(status_code=404, content={"detail": "API endpoint not found"})
-        
-    requested_file = DIST_DIR / full_path
-    if requested_file.is_file():
+
+    dist_root = DIST_DIR.resolve()
+    requested_file = (DIST_DIR / full_path).resolve()
+    if requested_file.is_relative_to(dist_root) and requested_file.is_file():
         return FileResponse(requested_file)
         
     entry_html_file = DIST_DIR / "index.html"

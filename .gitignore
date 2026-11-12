@@ -45,6 +45,7 @@ env/
 .env
 .env.*
 !.env.example
+cookies.txt
 
 # Heavy ML / AI Model weights
 LapSRN_x2.pb

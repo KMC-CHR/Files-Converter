@@ -1,8 +1,12 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Image as ImageIcon, Download, RefreshCw, Layers } from "lucide-react";
 import { removeBackground } from "../api/client";
 
-export function RemoveBgTool() {
+interface RemoveBgToolProps {
+  onBusyChange?: (busy: boolean) => void;
+}
+
+export function RemoveBgTool({ onBusyChange }: RemoveBgToolProps) {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [processedBlob, setProcessedBlob] = useState<Blob | null>(null);
@@ -12,8 +16,21 @@ export function RemoveBgTool() {
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dragDepthRef = useRef<number>(0);
+  const isProcessingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    onBusyChange?.(isProcessing);
+  }, [isProcessing, onBusyChange]);
+
+  useEffect(() => {
+    return () => {
+      onBusyChange?.(false);
+    };
+  }, [onBusyChange]);
 
   const resetState = () => {
+    if (isProcessingRef.current) return;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     if (processedUrl) URL.revokeObjectURL(processedUrl);
     setFile(null);
@@ -24,6 +41,7 @@ export function RemoveBgTool() {
   };
 
   const handleFileSelect = (selectedFile: File) => {
+    if (isProcessingRef.current) return;
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(selectedFile.type)) {
       setError("Please select a valid image file (JPEG, PNG, or WebP).");
@@ -40,34 +58,67 @@ export function RemoveBgTool() {
     setProcessedUrl(null);
   };
 
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (!isDragging) {
-      setIsDragging(true);
-    }
-  };
+  const handleFileSelectRef = useRef(handleFileSelect);
+  useEffect(() => {
+    handleFileSelectRef.current = handleFileSelect;
+  });
 
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
-    setIsDragging(false);
-  };
+  useEffect(() => {
+    const hasFiles = (e: DragEvent): boolean =>
+      Boolean(e.dataTransfer?.types && Array.from(e.dataTransfer.types).includes("Files"));
 
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
-    const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile) {
-      handleFileSelect(droppedFile);
-      e.dataTransfer.clearData();
-    }
-  };
+    const onWindowDragEnter = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current += 1;
+      if (dragDepthRef.current === 1) {
+        setIsDragging(true);
+      }
+    };
+
+    const onWindowDragOver = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = "copy";
+    };
+
+    const onWindowDragLeave = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+      if (dragDepthRef.current === 0) {
+        setIsDragging(false);
+      }
+    };
+
+    const onWindowDrop = (e: DragEvent) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      dragDepthRef.current = 0;
+      setIsDragging(false);
+      if (isProcessingRef.current) return;
+      const droppedFile = e.dataTransfer?.files?.[0];
+      if (droppedFile) {
+        handleFileSelectRef.current(droppedFile);
+        e.dataTransfer.clearData();
+      }
+    };
+
+    window.addEventListener("dragenter", onWindowDragEnter);
+    window.addEventListener("dragover", onWindowDragOver);
+    window.addEventListener("dragleave", onWindowDragLeave);
+    window.addEventListener("drop", onWindowDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", onWindowDragEnter);
+      window.removeEventListener("dragover", onWindowDragOver);
+      window.removeEventListener("dragleave", onWindowDragLeave);
+      window.removeEventListener("drop", onWindowDrop);
+    };
+  }, []);
 
   const handleProcess = async () => {
-    if (!file) return;
+    if (!file || isProcessing || isProcessingRef.current) return;
+    isProcessingRef.current = true;
     setIsProcessing(true);
     setError(null);
 
@@ -79,6 +130,7 @@ export function RemoveBgTool() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Background removal failed.");
     } finally {
+      isProcessingRef.current = false;
       setIsProcessing(false);
     }
   };
@@ -103,9 +155,6 @@ export function RemoveBgTool() {
     return (
       <div
         className={`atelier-dropzone ${isDragging ? "dragging" : ""}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         role="button"
         tabIndex={0}
@@ -140,7 +189,7 @@ export function RemoveBgTool() {
           }}
         >
           <h3 className="atelier-drop-title">
-            {isDragging ? "Release to load image" : "Drop an image to cut out the subject"}
+            {isDragging ? "Release anywhere to load image" : "Drop an image to cut out the subject"}
           </h3>
           <p className="atelier-drop-hint">Supports JPEG, PNG, and WebP formats</p>
         </div>
@@ -161,9 +210,6 @@ export function RemoveBgTool() {
   return (
     <div
       className="queue-wrapper"
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
       style={
         isDragging
           ? { borderColor: "var(--accent-amber)", boxShadow: "0 0 0 3px var(--accent-amber-soft)" }
@@ -194,12 +240,19 @@ export function RemoveBgTool() {
             {file.name}
           </h2>
           <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)" }}>
-            Drop another image anytime to replace
+            {isDragging
+              ? "Release anywhere to replace image"
+              : "Drop another image anytime to replace"}
           </p>
         </div>
 
         <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-          <button type="button" onClick={resetState} className="btn-secondary">
+          <button
+            type="button"
+            onClick={resetState}
+            disabled={isProcessing}
+            className="btn-secondary"
+          >
             Change Image
           </button>
 
@@ -303,19 +356,36 @@ export function RemoveBgTool() {
               justifyContent: "center",
               padding: processedUrl ? 0 : "1.5rem",
               textAlign: "center",
+              position: "relative",
             }}
           >
             {processedUrl ? (
               <img
                 src={processedUrl}
                 alt="No background result preview"
+                className="cutout-reveal"
                 style={{ width: "100%", maxHeight: "380px", objectFit: "contain" }}
               />
+            ) : isProcessing ? (
+              <div
+                aria-busy="true"
+                aria-label="Isolating subject in memory"
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: "0.75rem",
+                }}
+              >
+                <div className="fc-skeleton-block" style={{ width: "100%", height: "168px" }} />
+                <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                  Isolating subject in memory...
+                </span>
+              </div>
             ) : (
               <span style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
-                {isProcessing
-                  ? "Isolating subject in memory..."
-                  : 'Click "Remove Background" to preview cutout'}
+                Click "Remove Background" to preview cutout
               </span>
             )}
           </div>

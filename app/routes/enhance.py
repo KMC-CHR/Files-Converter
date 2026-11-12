@@ -3,7 +3,12 @@ import os
 import gc
 from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Response
 from PIL import Image, ImageEnhance, ImageFilter
-from utils import normalize_image
+from utils import (
+    normalize_image,
+    open_validated_image,
+    read_bounded_upload,
+    safe_download_filename,
+)
 
 enhance_router = APIRouter(prefix="/api", tags=["Enhance"])
 
@@ -23,8 +28,8 @@ async def enhance_single(
     selected_mode = (enhance_mode or mode or "full").lower()
 
     try:
-        input_bytes = await file.read()
-        img = Image.open(io.BytesIO(input_bytes))
+        input_bytes = await read_bounded_upload(file)
+        img = open_validated_image(input_bytes)
         img = normalize_image(img)
 
         f = factor if factor and factor > 0 else 1.0
@@ -65,8 +70,7 @@ async def enhance_single(
         del input_bytes, img
         gc.collect()
 
-        filename_no_ext = os.path.splitext(file.filename)[0]
-        download_name = f"enhanced_{filename_no_ext}.{ext}"
+        download_name = safe_download_filename(file.filename, "enhanced_", ext)
 
         return Response(
             content=content_bytes,
@@ -75,6 +79,9 @@ async def enhance_single(
                 "Content-Disposition": f'attachment; filename="{download_name}"'
             }
         )
+    except HTTPException:
+        gc.collect()
+        raise
     except Exception as e:
         gc.collect()
         raise HTTPException(status_code=500, detail=f"Enhancement failed: {str(e)}")

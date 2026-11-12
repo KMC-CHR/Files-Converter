@@ -1,4 +1,3 @@
-import io
 import ipaddress
 import os
 import re
@@ -12,7 +11,7 @@ from urllib.parse import urlparse
 
 import yt_dlp
 from fastapi import APIRouter, HTTPException, Request, Response
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 
 download_router = APIRouter(prefix="/api", tags=["Download"])
 
@@ -107,6 +106,43 @@ def friendly_error(raw: str) -> str:
     return 'Failed to process link. Please verify the URL and try again.'
 
 
+def find_cookie_source() -> tuple[Optional[str], int]:
+    secret_cookie_paths = (
+        "/etc/secrets/cookies.txt",
+        "/etc/secrets/YOUTUBE_COOKIES",
+        "cookies.txt",
+        "YOUTUBE_COOKIES",
+    )
+    for path in secret_cookie_paths:
+        if os.path.isfile(path):
+            size = os.path.getsize(path)
+            if size > 0:
+                return path, size
+
+    raw_cookies = os.environ.get("YOUTUBE_COOKIES", "").strip()
+    if raw_cookies:
+        return "env:YOUTUBE_COOKIES", len(raw_cookies)
+
+    return None, 0
+
+
+@download_router.get("/cookie-status")
+async def cookie_status():
+    source, byte_size = find_cookie_source()
+    if source is None:
+        return {
+            "found": False,
+            "source": None,
+            "bytes": 0,
+        }
+
+    return {
+        "found": True,
+        "source": source,
+        "bytes": byte_size,
+    }
+
+
 @download_router.post("/download-media")
 async def download_media(payload: DownloadRequest, request: Request):
     forwarded_for = request.headers.get("x-forwarded-for", "")
@@ -140,25 +176,22 @@ async def download_media(payload: DownloadRequest, request: Request):
             'max_filesize': MAX_FILESIZE,
         }
 
-        secret_cookie_paths = (
-            "/etc/secrets/YOUTUBE_COOKIES",
-            "/etc/secrets/cookies.txt",
-            "YOUTUBE_COOKIES",
-        )
-        loaded_cookie_file = next((p for p in secret_cookie_paths if os.path.isfile(p)), None)
-
-        if loaded_cookie_file:
+        cookie_source, _ = find_cookie_source()
+        if cookie_source and cookie_source != "env:YOUTUBE_COOKIES":
             cookie_path = os.path.join(temp_dir, 'cookies.txt')
-            shutil.copyfile(loaded_cookie_file, cookie_path)
+            shutil.copyfile(cookie_source, cookie_path)
             base_ydl_opts['cookiefile'] = cookie_path
-        else:
+            print(f"INFO: Loaded YouTube cookies from {cookie_source}")
+        elif cookie_source == "env:YOUTUBE_COOKIES":
             raw_cookies = os.environ.get('YOUTUBE_COOKIES', '').strip()
-            if raw_cookies:
-                raw_cookies = raw_cookies.replace('\\n', '\n').replace('\\t', '\t')
-                cookie_path = os.path.join(temp_dir, 'cookies.txt')
-                with open(cookie_path, 'w', encoding='utf-8') as f:
-                    f.write(raw_cookies + '\n')
-                base_ydl_opts['cookiefile'] = cookie_path
+            raw_cookies = raw_cookies.replace('\\n', '\n').replace('\\t', '\t')
+            cookie_path = os.path.join(temp_dir, 'cookies.txt')
+            with open(cookie_path, 'w', encoding='utf-8') as f:
+                f.write(raw_cookies + '\n')
+            base_ydl_opts['cookiefile'] = cookie_path
+            print("INFO: Loaded YouTube cookies from YOUTUBE_COOKIES env var")
+        else:
+            print("WARNING: No YouTube cookies configured")
 
         if media_type == 'mp3':
             bitrate = quality if quality in ('320', '256', '192', '128') else '192'
@@ -197,7 +230,7 @@ async def download_media(payload: DownloadRequest, request: Request):
         candidates = [f for f in os.listdir(temp_dir) if f.lower().endswith(target_ext)]
         if not candidates:
             raise HTTPException(status_code=500, detail=f"{media_type.upper()} file was not generated")
-        
+
         output_file = os.path.join(temp_dir, candidates[0])
 
         with open(output_file, 'rb') as f:

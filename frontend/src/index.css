@@ -428,6 +428,9 @@ body {
   flex-direction: column;
   gap: 1.75rem;
   min-height: 460px;
+  /* Prevent scroll-anchor jitter when the queue grows and the stage
+     expands — stops the browser from adjusting scroll position. */
+  overflow-anchor: none;
 }
 
 .stage-header {
@@ -763,10 +766,14 @@ body {
   transform-origin: top left;
 }
 
-@starting-style {
-  .atelier-popover {
-    opacity: 0;
-    transform: scale(0.96);
+/* Guard @starting-style with @supports so unsupported browsers (Firefox,
+   Chrome < 117) skip the animation entirely and avoid a flash/pop-in. */
+@supports (selector(:popover-open)) {
+  @starting-style {
+    .atelier-popover {
+      opacity: 0;
+      transform: scale(0.96);
+    }
   }
 }
 
@@ -776,10 +783,12 @@ body {
     transform 200ms var(--ease-out);
 }
 
-@starting-style {
-  .cutout-reveal {
-    opacity: 0;
-    transform: scale(0.97);
+@supports (selector(:popover-open)) {
+  @starting-style {
+    .cutout-reveal {
+      opacity: 0;
+      transform: scale(0.97);
+    }
   }
 }
 
@@ -842,10 +851,13 @@ body {
     background-color 150ms ease;
 }
 
-@starting-style {
-  .studio-ledger-row {
-    opacity: 0;
-    transform: translateY(6px);
+/* Guard @starting-style: studio-ledger-row entry */
+@supports (selector(:popover-open)) {
+  @starting-style {
+    .studio-ledger-row {
+      opacity: 0;
+      transform: translateY(6px);
+    }
   }
 }
 
@@ -976,8 +988,25 @@ body {
    INPUT-AWARE RULES (NO STICKY HOVER, NO ANCHOR JITTER)
    ============================================ */
 
-/* Hover lift only on devices that truly hover */
-@media (hover: hover) {
+/* Eliminate 300ms tap delay and double-tap zoom jitter on mobile/tablet
+   for all interactive elements. */
+.atelier-dropzone,
+.btn-primary,
+.btn-primary-lg,
+.btn-primary-action,
+.btn-secondary,
+.rail-btn,
+.nav-link-clean,
+.theme-slider,
+.native-styled-select {
+  touch-action: manipulation;
+}
+
+/* Hover lift only on devices that truly hover AND have a fine pointer
+   (mouse / trackpad). Hybrid tablets with touch+keyboard falsely report
+   hover:hover but are coarse-pointer — guard with pointer:fine to
+   prevent jitter/jump on tap. */
+@media (hover: hover) and (pointer: fine) {
   .brand-link:hover .brand-icon {
     transform: translateY(-1px);
   }
@@ -1002,13 +1031,13 @@ body {
 }
 
 /* Touch devices: the URL bar resizes the viewport while scrolling, so give the
-   FAQ enough height that the #faq jump can always land at the top. */
+   FAQ enough height that the #faq jump can always land at the top.
+   Use 100svh (stable) as the base and 100dvh (dynamic) where supported
+   to eliminate jitter caused by the browser chrome collapsing/expanding. */
 @media (hover: none) and (pointer: coarse) {
   .faq-section {
-    min-height: 100vh;
-    /* fallback */
-    min-height: 100lvh;
-    /* largest viewport */
+    min-height: 100svh; /* stable — URL bar always excluded */
+    min-height: 100dvh; /* preferred — dynamically tracks bar */
   }
 }
 

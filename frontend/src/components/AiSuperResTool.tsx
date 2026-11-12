@@ -117,6 +117,8 @@ export const AiSuperResTool: React.FC<AiSuperResToolProps> = ({ onBusyChange }) 
     window.addEventListener("drop", onWindowDrop);
 
     return () => {
+      dragDepthRef.current = 0;
+      setIsDragging(false);
       window.removeEventListener("dragenter", onWindowDragEnter);
       window.removeEventListener("dragover", onWindowDragOver);
       window.removeEventListener("dragleave", onWindowDragLeave);

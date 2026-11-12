@@ -152,6 +152,11 @@ export const DownloadTool: React.FC<DownloadToolProps> = ({ onBusyChange }) => {
               <input
                 id="media-url-input"
                 type="url"
+                inputMode="url"
+                autoComplete="url"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
                 value={urlInput}
                 disabled={isDownloading}
                 onChange={(e) => setUrlInput(e.target.value)}

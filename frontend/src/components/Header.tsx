@@ -10,7 +10,14 @@ const scrollToId = (e: React.MouseEvent<HTMLAnchorElement>, id?: string) => {
   e.preventDefault();
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const behavior: ScrollBehavior = reduceMotion ? "auto" : "smooth";
+
+  // On touch / coarse-pointer devices (Samsung, Xiaomi, iOS, etc.) the browser
+  // URL bar collapses mid-smooth-scroll, shrinking the viewport.
+  // scrollIntoView() is viewport-relative so it recalculates its target against
+  // the new, smaller viewport and snaps the scroll position → visible jitter.
+  // Use instant jump on those devices to avoid the snap entirely.
+  const isCoarsePointer = window.matchMedia("(pointer: coarse)").matches;
+  const behavior: ScrollBehavior = reduceMotion || isCoarsePointer ? "auto" : "smooth";
 
   if (!id) {
     window.scrollTo({ top: 0, behavior });
@@ -21,7 +28,15 @@ const scrollToId = (e: React.MouseEvent<HTMLAnchorElement>, id?: string) => {
   const target = document.getElementById(id);
   if (!target) return;
 
-  target.scrollIntoView({ behavior, block: "start" });
+  // Use window.scrollTo with an ABSOLUTE document-Y position instead of
+  // scrollIntoView(). scrollIntoView() recalculates relative to the viewport
+  // every animation frame — if the viewport resizes (URL bar hide/show) the
+  // target jumps. An absolute scrollY is computed once before the scroll
+  // starts and is never affected by later viewport changes.
+  const SCROLL_MARGIN = 16; // mirrors the CSS scroll-margin-top: 1rem on #faq
+  const top = target.getBoundingClientRect().top + window.scrollY - SCROLL_MARGIN;
+  window.scrollTo({ top: Math.max(0, top), behavior });
+
   target.focus({ preventScroll: true });
   history.replaceState(null, "", `#${id}`);
 };
